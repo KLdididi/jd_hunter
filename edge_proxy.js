@@ -3,6 +3,7 @@
  */
 
 const http = require('http');
+const https = require('https');
 const { spawn } = require('child_process');
 const url = require('url');
 const net = require('net');
@@ -45,6 +46,51 @@ const server = http.createServer((req, res) => {
       return;
     }
     handleWebSocket(req, res, target);
+    return;
+  }
+
+  // /proxy - 通用 HTTP 代理（用于绕过 CORS）
+  if (parsedUrl.pathname === '/proxy') {
+    const targetUrl = parsedUrl.query.url;
+    if (!targetUrl) {
+      res.writeHead(400, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Missing url parameter' }));
+      return;
+    }
+
+    const parsed = url.parse(targetUrl);
+    const options = {
+      hostname: parsed.hostname,
+      port: parsed.port || (parsed.protocol === 'https:' ? 443 : 80),
+      path: parsed.path,
+      method: 'GET',
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
+    };
+
+    const proxyReq = https.request(options, (proxyRes) => {
+      // JSON 响应直接返回
+      if (proxyRes.headers['content-type'] && proxyRes.headers['content-type'].includes('application/json')) {
+        let body = '';
+        proxyRes.on('data', chunk => body += chunk);
+        proxyRes.on('end', () => {
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(body);
+        });
+      } else {
+        // 其他响应转发
+        res.writeHead(proxyRes.statusCode, proxyRes.headers);
+        proxyRes.pipe(res);
+      }
+    });
+
+    proxyReq.on('error', (e) => {
+      res.writeHead(502, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: e.message }));
+    });
+
+    proxyReq.end();
     return;
   }
 
