@@ -1,5 +1,5 @@
 {
   "version": "1.0.5",
   "updated": "2026-04-13",
-  "changelog": "v1.0.5: 修复版本号同步问题"
+  "changelog": "v1.0.5: 修复跨域问题，通过代理获取GitHub更新"
 }
