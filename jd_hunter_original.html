@@ -1,0 +1,1968 @@
+﻿<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>JD Hunter - BOSS直聘职位追踪器</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{
+  --bg:#0a0e17;--bg2:#111827;--bg3:#1e293b;--bg4:#334155;
+  --green:#10b981;--green2:#059669;--cyan:#06b6d4;--cyan2:#0891b2;
+  --purple:#8b5cf6;--amber:#f59e0b;--red:#ef4444;--blue:#3b82f6;
+  --text:#f1f5f9;--text2:#94a3b8;--text3:#64748b;
+  --border:rgba(255,255,255,0.08);--border2:rgba(255,255,255,0.12);
+}
+body{font-family:'Segoe UI',system-ui,sans-serif;background:var(--bg);color:var(--text);min-height:100vh;line-height:1.6}
+
+/* ===== 顶部栏 ===== */
+.topbar{
+  background:linear-gradient(135deg,#0f172a,#1e293b);
+  border-bottom:1px solid var(--border);
+  padding:0 2rem;display:flex;align-items:center;justify-content:space-between;
+  height:64px;position:sticky;top:0;z-index:100;
+}
+.topbar-left{display:flex;align-items:center;gap:1rem}
+.topbar h1{font-size:1.5rem;font-weight:800;background:linear-gradient(90deg,#10b981,#06b6d4);-webkit-background-clip:text;-webkit-text-fill-color:transparent}
+.topbar-right{display:flex;align-items:center;gap:.75rem;font-size:.82rem;color:var(--text2)}
+.status-dot{width:8px;height:8px;border-radius:50%;background:#444;flex-shrink:0}
+.status-dot.live{background:var(--green);animation:pulse 2s infinite}
+.status-dot.crawl{background:var(--amber);animation:pulse .7s infinite}
+.status-dot.error{background:var(--red)}
+.status-dot.done{background:var(--cyan)}
+
+/* ===== 主内容 ===== */
+.main{padding:1.5rem 2rem;max-width:1600px;margin:0 auto}
+
+/* ===== 统计卡片 ===== */
+.stats{
+  display:grid;grid-template-columns:repeat(auto-fill,minmax(160px,1fr));gap:.875rem;
+  margin-bottom:1.25rem;
+}
+.stat{
+  background:var(--bg2);border:1px solid var(--border);border-radius:12px;
+  padding:1rem;text-align:center;transition:.2s;
+}
+.stat:hover{border-color:var(--green);box-shadow:0 0 20px rgba(16,185,129,.08)}
+.stat-n{font-size:1.8rem;font-weight:800;color:var(--green);font-family:'Courier New',monospace;line-height:1.1}
+.stat-n.cyan{color:var(--cyan)}.stat-n.purple{color:var(--purple)}.stat-n.amber{color:var(--amber)}.stat-n.blue{color:var(--blue)}
+.stat-l{font-size:.72rem;color:var(--text3);margin-top:.25rem;text-transform:uppercase;letter-spacing:.5px}
+
+/* ===== 控制栏 ===== */
+.bar{
+  background:var(--bg2);border:1px solid var(--border);border-radius:14px;
+  padding:.875rem 1.25rem;display:flex;flex-wrap:wrap;gap:.625rem;align-items:center;
+  margin-bottom:1.25rem;
+}
+.bar-left{display:flex;flex-wrap:wrap;gap:.625rem;align-items:center;flex:1}
+.bar-right{display:flex;gap:.5rem;align-items:center}
+
+.cg{display:flex;flex-direction:column;gap:.15rem}
+.cg-l{font-size:.65rem;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;padding-left:.1rem}
+input,select{
+  background:var(--bg3);border:1px solid var(--border);
+  color:var(--text);padding:.45rem .75rem;border-radius:7px;font-size:.85rem;
+  min-width:130px;transition:.2s;
+}
+input:focus,select:focus{outline:none;border-color:var(--cyan);box-shadow:0 0 0 2px rgba(6,182,212,.08)}
+input[type=number]{min-width:70px}
+input[type=file]{border:none;background:none;min-width:auto;padding:.3rem .5rem}
+select{min-width:110px}
+
+/* 按钮 */
+.btn{
+  padding:.5rem 1.1rem;border-radius:8px;font-weight:600;cursor:pointer;
+  border:none;font-size:.82rem;transition:.2s;white-space:nowrap;
+}
+.btn-g{background:linear-gradient(135deg,var(--green),var(--green2));color:#fff}
+.btn-g:hover{box-shadow:0 4px 14px rgba(16,185,129,.4);transform:translateY(-1px)}
+.btn-c{background:linear-gradient(135deg,var(--cyan),var(--cyan2));color:#fff}
+.btn-c:hover{box-shadow:0 4px 14px rgba(6,182,212,.4);transform:translateY(-1px)}
+.btn-a{background:linear-gradient(135deg,var(--amber),#d97706);color:#000}
+.btn-a:hover{box-shadow:0 4px 14px rgba(245,158,11,.4)}
+.btn-r{background:linear-gradient(135deg,var(--red),#dc2626);color:#fff}
+.btn-r:hover{box-shadow:0 4px 14px rgba(239,68,68,.4)}
+.btn-o{background:transparent;border:1px solid var(--border2);color:var(--text2)}
+.btn-o:hover{border-color:var(--cyan);color:var(--cyan)}
+.btn-p{background:linear-gradient(135deg,var(--purple),#7c3aed);color:#fff}
+.btn-p:hover{box-shadow:0 4px 14px rgba(139,92,246,.4);transform:translateY(-1px)}
+.btn:disabled{opacity:.35;cursor:not-allowed;transform:none!important}
+
+/* ===== 爬取进度 ===== */
+.prog{
+  background:rgba(245,158,11,.06);border:1px solid rgba(245,158,11,.25);border-radius:14px;
+  padding:1rem 1.5rem;margin-bottom:1.25rem;display:none;
+}
+.prog.on{display:block}
+.prog-h{display:flex;align-items:center;justify-content:space-between;margin-bottom:.6rem}
+.prog-hl{display:flex;align-items:center;gap:.5rem;font-weight:600;color:var(--amber);font-size:.9rem}
+.prog-hi{display:flex;gap:1rem;font-size:.78rem;color:var(--text2)}
+.prog-bar{height:7px;background:var(--bg4);border-radius:4px;overflow:hidden;margin-bottom:.5rem}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--amber),var(--green));border-radius:4px;transition:width .4s}
+.prog-info{display:flex;flex-wrap:wrap;gap:.4rem 1.5rem;font-size:.8rem;color:var(--text2)}
+.cj{color:var(--cyan);font-weight:600;max-width:380px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+
+/* ===== 表格 ===== */
+.tbl{background:var(--bg2);border:1px solid var(--border);border-radius:14px;overflow:hidden}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+thead{background:#0f172a}
+th{
+  padding:.65rem .9rem;text-align:left;color:var(--text3);font-weight:600;
+  font-size:.7rem;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap;
+  cursor:pointer;user-select:none;
+}
+th:hover{color:var(--text)}
+td{padding:.65rem .9rem;border-top:1px solid var(--border);vertical-align:top}
+tbody tr{transition:.12s}
+tbody tr:hover{background:rgba(16,185,129,.03)}
+tbody tr.hi{background:rgba(245,158,11,.05)}
+
+.t-title{font-weight:600;color:var(--green);max-width:200px}
+.t-title span{display:block;font-size:.75rem;color:var(--text3);font-weight:400}
+.t-co{color:var(--text2);max-width:120px;font-size:.82rem}
+.t-sal{color:var(--amber);font-weight:700;font-family:'Courier New',monospace;white-space:nowrap;font-size:.88rem}
+.t-meta{display:flex;flex-wrap:wrap;gap:.25rem}
+.badge{
+  padding:.12rem .5rem;border-radius:4px;font-size:.68rem;font-weight:500;white-space:nowrap;
+}
+.bc{background:rgba(6,182,212,.12);color:var(--cyan)}
+.be{background:rgba(139,92,246,.12);color:var(--purple)}
+.bd{background:rgba(16,185,129,.12);color:var(--green)}
+.bx{background:rgba(16,185,129,.08);color:var(--green);cursor:pointer}
+.bx:hover{background:rgba(16,185,129,.18)}
+.t-loc{color:var(--text2);font-size:.8rem;max-width:120px}
+.t-st{font-size:.78rem}
+.sd{color:var(--green);font-weight:600}
+.se{color:var(--text3)}
+.sc{color:var(--amber);animation:pulse 1s infinite}
+.t-act a{color:var(--cyan);font-size:.78rem;text-decoration:none}
+.t-act a:hover{text-decoration:underline}
+.t-act span{cursor:pointer;margin-left:.5rem;color:var(--text3);font-size:.8rem}
+.t-act span:hover{color:var(--cyan)}
+.chk{width:36px}
+
+/* 分页 */
+.pg{
+  display:flex;align-items:center;justify-content:center;gap:.4rem;
+  padding:.875rem;border-top:1px solid var(--border);
+}
+.pg-btn{
+  padding:.35rem .8rem;border:1px solid var(--border);border-radius:6px;
+  background:transparent;color:var(--text2);cursor:pointer;font-size:.82rem;transition:.15s;
+}
+.pg-btn:hover:not(:disabled){border-color:var(--cyan);color:var(--cyan)}
+.pg-btn.on{background:var(--cyan);color:#000;border-color:var(--cyan)}
+.pg-btn:disabled{opacity:.3;cursor:not-allowed}
+.pg-num{font-size:.78rem;color:var(--text3);padding:0 .5rem}
+
+/* ===== 空状态 ===== */
+.empty{text-align:center;padding:4rem 2rem}
+.ei{font-size:3rem;opacity:.25;margin-bottom:.75rem}
+.empty h3{font-size:1rem;color:var(--text2);margin-bottom:.4rem}
+.empty p{font-size:.85rem;color:var(--text3)}
+
+/* ===== 模态框 ===== */
+.mo{
+  position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;
+  display:flex;align-items:center;justify-content:center;padding:1rem;
+  opacity:0;pointer-events:none;transition:.2s;
+}
+.mo.sh{opacity:1;pointer-events:all}
+.mo.sh .md{transform:scale(1)}
+.md{
+  background:var(--bg2);border:1px solid var(--border);border-radius:16px;
+  width:100%;max-width:860px;max-height:88vh;overflow:auto;
+  transform:scale(.95);transition:.2s;
+}
+.mo-hd{
+  padding:1rem 1.5rem;border-bottom:1px solid var(--border);
+  display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;
+  background:var(--bg2);z-index:1;
+}
+.mo-hd h2{font-size:1.05rem;color:var(--green);font-weight:700}
+.mo-cl{background:none;border:none;color:var(--text2);font-size:1.8rem;cursor:pointer;line-height:1;padding:.1rem .4rem}
+.mo-cl:hover{color:var(--text)}
+.mo-bd{padding:1.25rem 1.5rem}
+.mo-f{margin-bottom:1.1rem}
+.mo-fl{font-size:.68rem;color:var(--text3);text-transform:uppercase;letter-spacing:.5px;display:block;margin-bottom:.35rem}
+.mo-fv{
+  background:var(--bg3);border-radius:8px;padding:.875rem 1rem;
+  font-size:.85rem;color:var(--text2);white-space:pre-wrap;word-break:break-all;
+  max-height:180px;overflow:auto;line-height:1.6;
+}
+.mo-link a{color:var(--cyan);word-break:break-all}
+
+/* ===== 提示 ===== */
+.toast{
+  position:fixed;bottom:2rem;left:50%;transform:translateX(-50%) translateY(80px);
+  background:var(--bg3);border:1px solid var(--border);border-radius:10px;
+  padding:.6rem 1.4rem;font-size:.85rem;z-index:300;
+  transition:transform .3s cubic-bezier(.22,.68,0,1.2);pointer-events:none;
+}
+.toast.sh{transform:translateX(-50%) translateY(0)}
+.toast.ok{border-color:var(--green);color:var(--green)}
+.toast.er{border-color:var(--red);color:var(--red)}
+.toast.if{border-color:var(--cyan);color:var(--cyan)}
+
+/* 动画 */
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.5}}
+
+/* CSV导入区 */
+.drop{
+  border:2px dashed var(--border2);border-radius:12px;padding:1.5rem;text-align:center;
+  cursor:pointer;transition:.2s;margin-bottom:1.25rem;
+}
+.drop:hover,.drop.dg{border-color:var(--cyan);background:rgba(6,182,212,.04)}
+.drop p{font-size:.88rem;color:var(--text3)}
+.drop p span{color:var(--cyan)}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="topbar-left">
+    <h1>🕷️ JD Hunter <span id="verTag" style="font-size:.65rem;background:var(--bg4);padding:2px 6px;border-radius:4px;margin-left:8px;cursor:pointer" onclick="showChangelog()">v...</span></h1>
+    <span style="font-size:.8rem;color:var(--text3)">BOSS直聘 · AI职位追踪器</span>
+  </div>
+  <div class="topbar-right">
+    <div class="status-dot" id="dot"></div>
+    <span id="status">就绪</span>
+  </div>
+</div>
+
+<div class="main">
+
+  <!-- 统计 -->
+  <div class="stats" id="stats">
+    <div class="stat"><div class="stat-n" id="s-tot">0</div><div class="stat-l">职位总数</div></div>
+    <div class="stat"><div class="stat-n cyan" id="s-city">0</div><div class="stat-l">城市数</div></div>
+    <div class="stat"><div class="stat-n purple" id="s-sal">-</div><div class="stat-l">薪资中位数</div></div>
+    <div class="stat"><div class="stat-n" id="s-crawled">0</div><div class="stat-l">已抓详情</div></div>
+    <div class="stat"><div class="stat-n amber" id="s-rem">0</div><div class="stat-l">待抓取</div></div>
+    <div class="stat"><div class="stat-n blue" id="s-exp">-</div><div class="stat-l">主流经验</div></div>
+  </div>
+
+  <!-- 导入区 -->
+  <div class="drop" id="dropZone" onclick="document.getElementById('fi').click()">
+    <p>📂 <span>点击导入 CSV 文件</span> 或将文件拖拽到此处</p>
+    <p style="margin-top:.3rem;font-size:.78rem">支持 .csv / .json，自动识别字段</p>
+    <p style="margin-top:.3rem;font-size:.75rem;color:var(--cyan)">💡 提示：首次使用请先在右侧配置GitHub Token</p>
+    <input type="file" id="fi" accept=".csv,.json" style="display:none" onchange="doImport(this.files[0])">
+  </div>
+
+  <!-- 控制栏 -->
+  <div class="bar">
+    <div class="bar-left">
+      <div class="cg"><div class="cg-l">搜索</div>
+        <input type="text" id="srch" placeholder="职位/公司…" oninput="filtr()">
+      </div>
+      <div class="cg"><div class="cg-l">城市</div>
+        <select id="fc" onchange="filtr()"><option value="">全部</option></select>
+      </div>
+      <div class="cg"><div class="cg-l">经验</div>
+        <select id="fe" onchange="filtr()"><option value="">全部</option></select>
+      </div>
+      <div class="cg"><div class="cg-l">CDP端口</div>
+        <input type="number" id="port" value="9222" style="width:70px">
+      </div>
+      <button class="btn btn-c" id="btnLaunch" onclick="launchEdge()">🌐 启动Edge</button>
+    </div>
+    <div class="bar-right">
+      <button class="btn btn-g" id="btnGo" onclick="startCrawl()">▶ 开始爬取详情</button>
+      <button class="btn btn-r" id="btnStop" onclick="stopCrawl()" disabled>■ 停止</button>
+      <button class="btn btn-o" onclick="selectDir()">📁 保存目录</button>
+      <button class="btn btn-o" onclick="expCSV()">📥 CSV</button>
+      <button class="btn btn-o" onclick="expXLS()">📊 Excel</button>
+      <button class="btn btn-o" id="btnView" onclick="viewSel()">🔍 查看</button>
+      <button class="btn btn-o" onclick="viewAllData()">📋 全部数据</button>
+      <button class="btn btn-p" id="btnUpdateCode" onclick="checkCodeUpdate()">🔔 检查更新</button>
+      <button class="btn btn-o" onclick="publishReleaseManually()">📣 发布公告</button>
+    </div>
+  </div>
+
+  <!-- GitHub 同步栏 -->
+  <div class="bar" id="ghBar">
+    <div class="bar-left">
+      <div class="cg"><div class="cg-l">GitHub 用户</div>
+        <input type="text" id="ghUser" placeholder="KLdididi" style="min-width:100px" value="KLdididi">
+      </div>
+      <div class="cg"><div class="cg-l">仓库</div>
+        <input type="text" id="ghRepo" placeholder="jd_hunter" style="min-width:100px" value="jd_hunter">
+      </div>
+      <div class="cg" style="flex:1;max-width:200px"><div class="cg-l">Token</div>
+        <input type="password" id="ghToken" placeholder="你的token已预填" style="min-width:100px;width:100%" value="">
+      </div>
+      <div class="cg"><div class="cg-l">文件名</div>
+        <input type="text" id="ghFile" value="jobs_data.json" style="min-width:120px">
+      </div>
+      <div class="cg"><div class="cg-l">自动同步</div>
+        <select id="ghAutoInterval" style="min-width:90px">
+          <option value="0">关闭</option>
+          <option value="60">1分钟</option>
+          <option value="180">3分钟</option>
+          <option value="300" selected>5分钟</option>
+          <option value="600">10分钟</option>
+          <option value="900">15分钟</option>
+        </select>
+      </div>
+    </div>
+    <div class="bar-right">
+      <button class="btn btn-g" id="btnPush" onclick="ghPush()">⬆️ 上传</button>
+      <button class="btn btn-o" id="btnPull" onclick="ghPull()">⬇️ 拉取</button>
+      <span id="ghAutoStatus" style="font-size:.78rem;color:var(--text3)"></span>
+    </div>
+  </div>
+
+  <!-- 爬取进度 -->
+  <div class="prog" id="prog">
+    <div class="prog-h">
+      <div class="prog-hl">⚙️ 正在爬取详情页</div>
+      <div class="prog-hi">
+        <span>错误: <b id="pErr">0</b></span>
+        <span>用时: <b id="pTime">0s</b></span>
+      </div>
+    </div>
+    <div class="prog-bar"><div class="prog-fill" id="pFill" style="width:0%"></div></div>
+    <div class="prog-info">
+      <span>进度: <b id="pPro">0/0</b></span>
+      <span>当前: <span class="cj" id="pJob">-</span></span>
+    </div>
+  </div>
+
+  <!-- 表格 -->
+  <div class="tbl">
+    <table>
+      <thead>
+        <tr>
+          <th class="chk"><input type="checkbox" id="sa" onchange="togAll()"></th>
+          <th onclick="sort('city')">城市</th>
+          <th onclick="sort('name')">职位名称</th>
+          <th onclick="sort('company')">公司</th>
+          <th onclick="sort('salary')">薪资</th>
+          <th>经验/学历</th>
+          <th>地点</th>
+          <th onclick="sort('hasDesc')">详情</th>
+          <th>操作</th>
+        </tr>
+      </thead>
+      <tbody id="tb"></tbody>
+    </table>
+    <div class="pg" id="pg"></div>
+  </div>
+</div>
+
+<!-- 模态框 -->
+<div class="mo" id="mo" onclick="if(event.target===this)clMo()">
+  <div class="md">
+    <div class="mo-hd">
+      <h2 id="moTi">职位详情</h2>
+      <button class="mo-cl" onclick="clMo()">×</button>
+    </div>
+    <div class="mo-bd" id="moBd"></div>
+  </div>
+</div>
+
+<!-- 提示 -->
+<div class="toast" id="toast"></div>
+
+<script>
+// ==================== 版本和更新日志 ====================
+const APP_VERSION = '1.1.4';  // 代码版本号（统一管理，修改这里自动同步）
+
+// 更新日志
+const CHANGELOG = [
+  {
+    version: '1.1.4',
+    date: '2026-04-14',
+    notes: [
+      'fix: fetch超时保护（AbortController，代理不可用时静默跳过，不卡死页面）',
+      'fix: CDP检测5秒超时、GitHub版本检查8秒超时',
+      'fix: 移除 autoCheckUpdate 强制弹窗（改为24h静默检查+顶部横幅）',
+      'update: 重构自动更新通知逻辑——顶部横幅+用户主动触发',
+      'update: 添加showUpdateAnnouncement弹窗函数（点击横幅触发）',
+      'fix: 移除测试弹窗（之前1秒后强制弹出）'
+    ]
+  },
+  { version: '1.0.8', date: '2026-04-14', notes: ['修复edge_proxy.js的多个bug', '新增launch_edge.bat启动脚本', '优化CDP代理连接稳定性'] },
+  { version: '1.0.7', date: '2026-04-13', notes: ['修复WebSocket代理功能', '新增/ws?target=端点', '修复CORS跨域问题'] },
+  { version: '1.0.6', date: '2026-04-13', notes: ['修复path参数支持', '修复Host header泄露', '修复user-data-dir一致性'] },
+  { version: '1.0.5', date: '2026-04-13', notes: ['修复自动更新公告功能', '添加GitHub发布公告功能', '优化版本检测逻辑'] },
+  { version: '1.0.4', date: '2026-04-13', notes: ['修复本地版本号未同步问题', '添加调试日志'] },
+  { version: '1.0.3', date: '2026-04-13', notes: ['新增「全部数据」按钮', '新增表格抓取状态显示', '新增直接导出全部数据'] },
+  { version: '1.0.2', date: '2026-04-13', notes: ['修复数据保存问题', '添加更新日志公告'] },
+  { version: '1.0.1', date: '2026-04-13', notes: ['添加自动更新检测功能'] },
+  { version: '1.0.0', date: '2026-04-13', notes: ['初始版本发布', '支持BOSS直聘职位详情抓取', '支持CDP连接', '支持CSV/Excel导出'] }
+];
+let JOBS = [];           // 全部数据
+let FLT = [];            // 过滤后
+let PAGE = 1;
+const PS = 30;
+let SC = 'city';
+let SD = 'asc';
+let ST = {running:false, cur:0, tot:0, err:0, start:0, cdp:null, stop:false, results:[]};
+let PT = null;
+
+// ==================== 初始化 ====================
+(function(){
+  // 动态更新版本标签
+  document.getElementById('verTag').textContent = 'v' + APP_VERSION;
+  setDot('idle','就绪');
+  // 尝试从 localStorage 加载
+  try{
+    const s = localStorage.getItem('jd_hunter_jobs');
+    if(s){ JOBS = JSON.parse(s); buildFlt(); filtr(); updStats(); }
+  }catch(e){}
+  document.getElementById('srch').addEventListener('input',debounce(filtr,300));
+  // 拖放
+  const dz = document.getElementById('dropZone');
+  dz.addEventListener('dragover', e=>{ e.preventDefault(); dz.classList.add('dg'); });
+  dz.addEventListener('dragleave', ()=>dz.classList.remove('dg'));
+  dz.addEventListener('drop', e=>{ e.preventDefault(); dz.classList.remove('dg'); doImport(e.dataTransfer.files[0]); });
+})();
+
+// ==================== 导入 ====================
+function doImport(file){
+  if(!file){toast('请选择文件','er');return}
+  const fd = new FileReader();
+  fd.onload = function(ev){
+    try{
+      const fn = file.name.toLowerCase();
+      if(fn.endsWith('.csv')){ parseCSV(ev.target.result); }
+      else if(fn.endsWith('.json')){ parseJSON(ev.target.result); }
+      else { toast('不支持的格式','er'); return; }
+    }catch(e){ toast('解析失败: '+e,'er'); }
+  };
+  fd.readAsText(file);
+}
+
+function parseCSV(txt){
+  const jobs = parseCSVRobust(txt);
+  if(!jobs.length){toast('CSV解析失败或无有效数据','er');return}
+  // 清理空公司/地点
+  jobs.forEach(j=>{
+    if(!j.company||j.company==='""'||j.company==="''") j.company='';
+    if(!j.location||j.location==='""'||j.location==="''") j.location='';
+    j.hasDesc = !!(j.duties||j.requirements||j.desc);
+  });
+  JOBS = jobs;
+  save(); buildFlt(); filtr(); updStats();
+  toast('成功导入 '+JOBS.length+' 条数据','ok');
+}
+
+function parseJSON(txt){
+  const d = JSON.parse(txt);
+  JOBS = Array.isArray(d) ? d : (d.jobs||[]);
+  // 标准化字段
+  JOBS = JOBS.map(j=>({
+    city:j.city||'',name:j.name||j.title||'',
+    company:j.company||'',location:j.location||j.area||'',
+    area:j.area||'',exp:j.exp||j.experience||'',
+    edu:j.edu||j.education||'',salary:j.salary||'',
+    duties:j.duties||j.desc||'',requirements:j.requirements||j.requires||'',
+    link:j.link||j.url||'',hasDesc:!!(j.duties||j.desc||j.requirements)
+  }));
+  if(!JOBS.length){toast('JSON无有效数据','er');return}
+  save(); buildFlt(); filtr(); updStats();
+  toast('成功导入 '+JOBS.length+' 条条','ok');
+}
+
+// CSV行解析（处理引号）
+function splitCSV(line){
+  const r=[];let cur='';let inQ=false;
+  for(let i=0;i<line.length;i++){
+    const c=line[i];
+    if(c==='"'){ inQ=!inQ; }
+    else if(c==','&&!inQ){ r.push(cur.trim()); cur=''; }
+    else { cur+=c; }
+  }
+  r.push(cur.trim());return r;
+}
+
+// BOM感知解析CSV
+function parseCSVRobust(txt){
+  // 去掉UTF-8 BOM (U+FEFF)
+  const clean = txt.replace(/^\uFEFF/,'').replace(/^\ufeff/,'');
+  const lines = clean.replace(/\r?\n/g,'\n').split('\n');
+  if(lines.length<2) return [];
+  // 去掉每个字段头的BOM
+  const heads = splitCSV(lines[0]).map(h=>h.replace(/^\uFEFF/,'').replace(/^\ufeff/,''));
+  // 辅助：包含中文关键词（忽略BOM）
+  const has = (h,k) => h.replace(/\ufeff/gi,'').includes(k);
+  const city_i=heads.findIndex(h=>has(h,'城市'));
+  const name_i=heads.findIndex(h=>has(h,'职位'));
+  const co_i=heads.findIndex(h=>has(h,'公司'));
+  const loc_i=heads.findIndex(h=>has(h,'地点'));
+  const exp_i=heads.findIndex(h=>has(h,'经验'));
+  const edu_i=heads.findIndex(h=>has(h,'学历'));
+  const sal_i=heads.findIndex(h=>has(h,'薪资'));
+  const dty_i=heads.findIndex(h=>has(h,'职责'));
+  const req_i=heads.findIndex(h=>has(h,'要求'));
+  const lnk_i=heads.findIndex(h=>has(h,'链接'));
+
+  const jobs = [];
+  for(let i=1;i<lines.length;i++){
+    if(!lines[i].trim()) continue;
+    const vals = splitCSV(lines[i]);
+    if(!vals.length) continue;
+    const link = lnk_i>=0 ? (vals[lnk_i]||'') : '';
+    if(!link && !vals[name_i]) continue;
+    jobs.push({
+      city: (city_i>=0?vals[city_i]:'')||'',
+      name: (name_i>=0?vals[name_i]:'')||'',
+      company: (co_i>=0?vals[co_i]:'')||'',
+      location: (loc_i>=0?vals[loc_i]:'')||'',
+      area: (loc_i>=0?vals[loc_i]:'')||'',
+      exp: (exp_i>=0?vals[exp_i]:'')||'',
+      edu: (edu_i>=0?vals[edu_i]:'')||'',
+      salary: (sal_i>=0?vals[sal_i]:'')||'',
+      duties: (dty_i>=0?vals[dty_i]:'')||'',
+      requirements: (req_i>=0?vals[req_i]:'')||'',
+      link: link,
+      hasDesc: !!( (dty_i>=0?vals[dty_i]:'') || (req_i>=0?vals[req_i]:'') )
+    });
+  }
+  return jobs;
+}
+
+// ==================== 过滤 & 排序 ====================
+function filtr(){
+  const q=(document.getElementById('srch').value||'').toLowerCase();
+  const c=document.getElementById('fc').value;
+  const e=document.getElementById('fe').value;
+  FLT = JOBS.filter(j=>{
+    if(q&&!(j.name+' '+j.company+' '+j.city).toLowerCase().includes(q))return false;
+    if(c&&j.city!==c)return false;
+    if(e&&j.exp!==e)return false;
+    return true;
+  });
+  // 排序
+  FLT.sort((a,b)=>{
+    let va=a[SC]||'',vb=b[SC]||'';
+    if(SC==='hasDesc'){va=(a.duties||a.requirements||'').length;vb=(b.duties||b.requirements||'').length}
+    if(SC==='salary'){va=parseSal(a.salary);vb=parseSal(b.salary)}
+    if(va<vb)return SD==='asc'?-1:1;
+    if(va>vb)return SD==='asc'?1:-1;
+    return 0;
+  });
+  PAGE=1; render();
+}
+
+function sort(col){
+  if(SC===col){ SD=SD==='asc'?'desc':'asc'; }
+  else{ SC=col; SD='asc'; }
+  filtr();
+}
+
+function buildFlt(){
+  const cities=[...new Set(JOBS.map(j=>j.city).filter(Boolean))].sort();
+  const exps=[...new Set(JOBS.map(j=>j.exp).filter(Boolean))].sort();
+  document.getElementById('fc').innerHTML='<option value="">全部</option>'+cities.map(c=>`<option value="${c}">${c}</option>`).join('');
+  document.getElementById('fe').innerHTML='<option value="">全部</option>'+exps.map(e=>`<option value="${e}">${e}</option>`).join('');
+}
+
+// ==================== 统计 ====================
+function updStats(){
+  const tot=JOBS.length;
+  const cityN=[...new Set(JOBS.map(j=>j.city).filter(Boolean))].size;
+  const crd=JOBS.filter(j=>j.hasDesc||j.duties||j.requirements||j.desc).length;
+  const rem=tot-crd;
+  // 薪资中位数
+  let sals=JOBS.map(j=>parseSal(j.salary)).filter(s=>s>0).sort((a,b)=>a-b);
+  let med='-';
+  if(sals.length){const mid=Math.floor(sals.length/2);med=sals.length%2===0?((sals[mid-1]+sals[mid])/2).toFixed(0)+'K':sals[mid]+'K';}
+  // 主流经验
+  const ec={};JOBS.forEach(j=>{if(j.exp)ec[j.exp]=(ec[j.exp]||0)+1});
+  let me='-',mm=0;for(const[k,v]of Object.entries(ec)){if(v>mm){mm=v;me=k;}}
+  document.getElementById('s-tot').textContent=tot;
+  document.getElementById('s-city').textContent=cityN;
+  document.getElementById('s-sal').textContent=med;
+  document.getElementById('s-crawled').textContent=crd;
+  document.getElementById('s-rem').textContent=rem;
+  document.getElementById('s-exp').textContent=me;
+}
+
+function parseSal(s){
+  if(!s)return 0;
+  const m=String(s).match(/(\d+)/g);
+  if(!m||m.length<2)return 0;
+  return (parseInt(m[0])+parseInt(m[1]))/2;
+}
+
+// ==================== 渲染表格 ====================
+function render(){
+  const tb=document.getElementById('tb');
+  const totP=Math.ceil(FLT.length/PS)||1;
+  if(PAGE>totP)PAGE=totP;
+  const s=(PAGE-1)*PS;
+  const p=FLT.slice(s,s+PS);
+
+  if(!p.length){
+    tb.innerHTML=`<tr><td colspan=9><div class="empty"><div class="ei">📭</div><h3>暂无数据</h3><p>导入CSV文件开始追踪职位</p></div></td></tr>`;
+    document.getElementById('pg').innerHTML='';
+    return;
+  }
+
+  tb.innerHTML=p.map((j,i)=>{
+    const gi=s+i;
+    const hi=!!(j.duties||j.requirements||j.desc||j.hasDesc);
+    const ia=ST.running&&ST.cur===gi;
+    return `<tr class="${ia?'hi':''}" data-i="${gi}">
+      <td><input type="checkbox" class="rc" data-i="${gi}"></td>
+      <td>${esc(j.city||'-')}</td>
+      <td class="t-title">${esc(j.name||'-')}</td>
+      <td class="t-co">${esc(j.company)||'<span style="color:var(--text3)">待抓取</span>'}</td>
+      <td class="t-sal">${esc(j.salary)||'-'}</td>
+      <td class="t-meta">
+        <span class="badge be">${esc(j.exp||'-')}</span>
+        <span class="badge bd">${esc(j.edu||'-')}</span>
+      </td>
+      <td class="t-loc">${esc(j.location||j.area||'-')}</td>
+      <td class="t-st">${hi?'<span class="sd">✓ 已抓</span>':'<span class="se">待抓取</span>'}</td>
+      <td class="t-act">
+        <a href="${esc(j.link||'#')}" target="_blank">链接</a>
+        <span onclick="shDetail(${gi})">👁</span>
+      </td>
+    </tr>`;
+  }).join('');
+
+  // 分页
+  const pg=document.getElementById('pg');
+  let h='';
+  h+=`<button class="pg-btn" onclick="goP(${PAGE-1})" ${PAGE===1?'disabled':''}>‹</button>`;
+  for(let i=1;i<=totP;i++){
+    if(i===1||i===totP||(i>=PAGE-2&&i<=PAGE+2)){
+      h+=`<button class="pg-btn ${i===PAGE?'on':''}" onclick="goP(${i})">${i}</button>`;
+    } else if(i===PAGE-3||i===PAGE+3){
+      h+=`<span style="color:var(--text3)">…</span>`;
+    }
+  }
+  h+=`<button class="pg-btn" onclick="goP(${PAGE+1})" ${PAGE===totP?'disabled':''}>›</button>`;
+  h+=`<span class="pg-num">${FLT.length}条 / ${totP}页</span>`;
+  pg.innerHTML=h;
+}
+
+function goP(n){
+  const totP=Math.ceil(FLT.length/PS)||1;
+  PAGE=Math.max(1,Math.min(n,totP));
+  render();
+}
+
+function togAll(){
+  const v=document.getElementById('sa').checked;
+  document.querySelectorAll('.rc').forEach(cb=>cb.checked=v);
+}
+
+function viewSel(){
+  const chk=document.querySelectorAll('.rc:checked');
+  if(chk.length!==1){toast('请先选中一个职位','er');return;}
+  shDetail(parseInt(chk[0].dataset.i));
+}
+
+// ==================== 详情模态框 ====================
+
+// 查看全部数据
+function viewAllData() {
+  if (!JOBS.length) {
+    toast('暂无数据，请先导入CSV文件', 'if');
+    return;
+  }
+  
+  // 创建数据查看弹窗
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.8);z-index:99999';
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+  
+  // 构建表格HTML
+  let html = `
+    <div style="background:var(--bg2);border-radius:12px;width:95%;height:95%;margin:1%;display:flex;flex-direction:column">
+      <div style="padding:16px;border-bottom:1px solid var(--bg4);display:flex;justify-content:space-between;align-items:center">
+        <h2 style="color:var(--green)">📋 全部数据 (共 ${JOBS.length} 条)</h2>
+        <div>
+          <button onclick="downloadAllData('csv')" class="btn btn-g" style="margin-right:8px">📥 导出CSV</button>
+          <button onclick="downloadAllData('json')" class="btn btn-o" style="margin-right:8px">📄 导出JSON</button>
+          <button onclick="this.closest('.data-overlay').remove()" style="background:none;border:none;color:var(--text3);font-size:1.5rem;cursor:pointer">×</button>
+        </div>
+      </div>
+      <div style="flex:1;overflow:auto;padding:16px">
+        <table style="width:100%;border-collapse:collapse;font-size:.85rem">
+          <thead style="position:sticky;top:0;background:var(--bg2)">
+            <tr style="color:var(--cyan)">
+              <th style="padding:8px;border:1px solid var(--bg4)">#</th>
+              <th style="padding:8px;border:1px solid var(--bg4)">城市</th>
+              <th style="padding:8px;border:1px solid var(--bg4)">职位</th>
+              <th style="padding:8px;border:1px solid var(--bg4)">公司</th>
+              <th style="padding:8px;border:1px solid var(--bg4)">薪资</th>
+              <th style="padding:8px;border:1px solid var(--bg4)">经验</th>
+              <th style="padding:8px;border:1px solid var(--bg4)">学历</th>
+              <th style="padding:8px;border:1px solid var(--bg4)">详情</th>
+            </tr>
+          </thead>
+          <tbody>
+  `;
+  
+  JOBS.forEach((j, i) => {
+    const hasDetail = j.duties || j.requirements || j.desc;
+    html += `
+      <tr style="color:var(--text2)">
+        <td style="padding:6px;border:1px solid var(--bg4)">${i + 1}</td>
+        <td style="padding:6px;border:1px solid var(--bg4)">${esc(j.city || '-')}</td>
+        <td style="padding:6px;border:1px solid var(--bg4)">${esc(j.name || '-')}</td>
+        <td style="padding:6px;border:1px solid var(--bg4)">${esc(j.company || '-')}</td>
+        <td style="padding:6px;border:1px solid var(--bg4);color:var(--green)">${esc(j.salary || '-')}</td>
+        <td style="padding:6px;border:1px solid var(--bg4)">${esc(j.exp || '-')}</td>
+        <td style="padding:6px;border:1px solid var(--bg4)">${esc(j.edu || '-')}</td>
+        <td style="padding:6px;border:1px solid var(--bg4)">
+          ${hasDetail ? '<span style="color:var(--green)">✓ 已抓取</span>' : '<span style="color:var(--red)">✗ 未抓取</span>'}
+        </td>
+      </tr>
+    `;
+  });
+  
+  html += '</tbody></table></div></div>';
+  
+  overlay.className = 'data-overlay';
+  overlay.innerHTML = html;
+  document.body.appendChild(overlay);
+}
+
+// 导出全部数据
+function downloadAllData(format) {
+  if (format === 'csv') {
+    expCSV();
+  } else {
+    // JSON导出
+    const blob = new Blob([JSON.stringify(JOBS, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'jd_hunter_all_data.json';
+    a.click();
+    URL.revokeObjectURL(url);
+    toast('✅ 已导出 JSON 文件', 'ok');
+  }
+}
+
+function shDetail(idx){
+  const j=JOBS[idx]||FLT[idx];
+  if(!j){return;}
+  document.getElementById('moTi').textContent=j.name||'职位详情';
+  document.getElementById('moBd').innerHTML=`
+    <div class="mo-f"><span class="mo-fl">公司</span><div class="mo-fv">${esc(j.company)||'(未抓取)'}</div></div>
+    <div class="mo-f"><span class="mo-fl">城市 / 地点</span><div class="mo-fv">${esc(j.city||'')} ${esc(j.location||j.area||'')}</div></div>
+    <div class="mo-f"><span class="mo-fl">薪资 / 经验 / 学历</span><div class="mo-fv">${esc(j.salary||'-')} | ${esc(j.exp||'-')} | ${esc(j.edu||'-')}</div></div>
+    ${j.link?`<div class="mo-f"><span class="mo-fl">原文链接</span><div class="mo-fv mo-link"><a href="${esc(j.link)}" target="_blank">${esc(j.link)}</a></div></div>`:''}
+    <div class="mo-f"><span class="mo-fl">岗位职责</span><div class="mo-fv">${esc(j.duties||j.desc||'')||'(未抓取)'}</div></div>
+    <div class="mo-f"><span class="mo-fl">任职要求</span><div class="mo-fv">${esc(j.requirements||'')||'(未抓取)'}</div></div>
+  `;
+  document.getElementById('mo').classList.add('sh');
+}
+function clMo(){document.getElementById('mo').classList.remove('sh');}
+document.getElementById('mo').addEventListener('click',function(e){if(e.target===this)clMo()});
+
+// ==================== 启动 Edge 浏览器（通过本地代理） ====================
+async function launchEdge(){
+  const btn = document.getElementById('btnLaunch');
+  btn.disabled = true;
+  btn.textContent = '⏳ 启动中...';
+
+  // 先检查是否已经运行（通过代理，避免 CORS）
+  try {
+    const ac = new AbortController();
+    const to = setTimeout(() => ac.abort(), 5000);
+    const res = await fetch('http://localhost:9223/cdp/http?path=/json/version', { signal: ac.signal });
+    clearTimeout(to);
+    if (res.ok) {
+      toast('✅ Edge 已运行中，CDP就绪！', 'ok');
+      btn.textContent = '✅ Edge已启动';
+      setDot('live', '浏览器就绪');
+      btn.disabled = false;
+      return;
+    }
+  } catch (_) {}
+
+  // 通过本地代理启动 Edge
+  toast('正在通过代理启动 Edge…', 'if');
+  try {
+    const ac = new AbortController();
+    const to = setTimeout(() => ac.abort(), 10000);
+    const r = await fetch(PROXY + '/launch', { method: 'GET', signal: ac.signal });
+    clearTimeout(to);
+    const d = await r.json();
+    if (d.status === 'ready') {
+      toast('✅ Edge 启动成功！请在浏览器中登录 zhipin.com', 'ok');
+      btn.textContent = '✅ Edge已启动';
+      setDot('live', '浏览器就绪');
+    } else if (d.status === 'launching') {
+      toast('Edge 正在启动中，稍候…', 'if');
+    } else {
+      toast('⚠️ ' + (d.message || '启动遇到问题'), 'er');
+      btn.disabled = false;
+      btn.textContent = '🌐 启动Edge';
+    }
+  } catch (e) {
+    toast('❌ 代理未运行，请先启动 edge_proxy.js', 'er');
+    btn.disabled = false;
+    btn.textContent = '🌐 启动Edge';
+    btn.style.boxShadow = '0 0 12px rgba(239,68,68,.4)';
+  }
+}
+
+// 页面加载时检查 CDP 状态（5秒超时，静默跳过）
+(function checkCDPOnLoad(){
+  setTimeout(async () => {
+    try {
+      const ac = new AbortController();
+      const to = setTimeout(() => ac.abort(), 5000);
+      const r = await fetch('http://localhost:9223/cdp/http?path=/json/version', { signal: ac.signal });
+      clearTimeout(to);
+      if (r.ok) {
+        setDot('live', '浏览器就绪');
+        toast('检测到 Edge 已运行 ✓', 'ok');
+      }
+    } catch (_) {}
+  }, 1500);
+})();
+
+// ==================== CDP 爬取 ====================
+const PROXY = 'http://localhost:9223';
+
+async function startCrawl(){
+  if(ST.running)return;
+  if(!JOBS.length){toast('请先导入CSV','er');return;}
+  const port=document.getElementById('port').value||'9222';
+
+  // 测试CDP连接（5秒超时）
+  try{
+    const ac = new AbortController();
+    const to = setTimeout(() => ac.abort(), 5000);
+    const r=await fetch('http://localhost:9223/cdp/http?path=/json', { signal: ac.signal });
+    clearTimeout(to);
+    if(!r.ok)throw new Error('CDP不可用');
+  }catch(e){
+    toast('无法连接CDP，请先点击「启动Edge」按钮！','er');
+    return;
+  }
+
+  // 收集未抓取的职位
+  const todo=[];
+  JOBS.forEach((j,i)=>{if(j.link&&!j.hasDesc&&!j.duties&&!j.requirements&&!j.desc)todo.push(i);});
+  if(!todo.length){toast('所有职位都已抓取详情','if');return;}
+
+  ST={running:true,cur:0,tot:todo.length,err:0,start:Date.now(),stop:false,results:[],todo};
+
+  document.getElementById('prog').classList.add('on');
+  document.getElementById('btnGo').disabled=true;
+  document.getElementById('btnStop').disabled=false;
+  setDot('crawl','爬取中…');
+  toast('开始爬取 '+todo.length+' 个详情页','if');
+
+  // 自动跳到第一个待抓
+  const firstP=Math.floor(todo[0]/PS)+1;
+  if(firstP!==PAGE){PAGE=firstP;render();}
+
+  nextCrawl();
+}
+
+async function nextCrawl(){
+  if(ST.stop||!ST.running){onCrawlDone();return;}
+  if(ST.cur>=ST.todo.length){onCrawlDone();return;}
+
+  const idx=ST.todo[ST.cur];
+  const job=JOBS[idx];
+  const url=job.link;
+
+  // 更新进度UI
+  updProg();
+
+  // 访问详情页
+  try{
+    await doCDP(url, idx);
+  }catch(e){
+    console.error('CDP错误:', e);
+    ST.err++;
+    updProg();
+  }
+
+  ST.cur++;
+  ST.results=ST.results.slice(-50);
+
+  render();
+
+  // 延迟防封
+  await sleep(2200);
+
+  // 继续下一条
+  PT=setTimeout(nextCrawl,100);
+}
+
+async function doCDP(url, jobIdx){
+  try {
+    // 1. 获取目标tab（5秒超时）
+    const ac = new AbortController();
+    const to = setTimeout(() => ac.abort(), 5000);
+    const tabsR = await fetch('http://localhost:9223/cdp/http?path=/json', { signal: ac.signal });
+    clearTimeout(to);
+    const tabs = await tabsR.json();
+    const tab = tabs.find(t => t.url && t.url.includes('zhipin')) || tabs[0];
+    if (!tab) {
+      console.error('未找到 zhipin 标签页');
+      throw new Error('No tab');
+    }
+
+    // 2. 直接连接 WebSocket（Edge 本地允许）
+    const wsUrl = tab.webSocketDebuggerUrl;
+    const ws = new WebSocket(wsUrl);
+    const msgId = { v: 0 };
+    const pending = {};
+    let connected = false;
+
+    function send(method, params) {
+      return new Promise((res, rej) => {
+        if (!connected) { rej(new Error('not connected')); return; }
+        const id = ++msgId.v;
+        pending[id] = res;
+        ws.send(JSON.stringify({ id, method, params }));
+        setTimeout(() => { if (pending[id]) { delete pending[id]; rej(new Error('timeout')); } }, 25000);
+      });
+    }
+
+    ws.onmessage = ev => {
+      try {
+        const d = JSON.parse(ev.data);
+        if (d.id && pending[d.id]) {
+          const fn = pending[d.id];
+          delete pending[d.id];
+          fn(d);
+        }
+      } catch (e) {
+        console.error('解析消息失败:', e);
+      }
+    };
+
+    ws.onerror = (e) => {
+      console.error('WebSocket错误');
+      ST.stop = true;
+    };
+
+    // 等待连接
+    await new Promise((res, rej) => {
+      ws.onopen = () => { connected = true; res(); };
+      ws.onerror = () => { rej(new Error('WebSocket连接失败')) };
+      setTimeout(() => { if (!connected) rej(new Error('WebSocket超时')); }, 10000);
+    });
+
+    // 3. 开启 Page 域
+    await send('Page.enable');
+    await sleep(800);
+
+    // 4. 导航到详情页
+    await send('Page.navigate', { url });
+    await sleep(2000);
+
+    // 5. 等待页面加载完成
+    let loaded = false;
+    for (let t = 0; t < 20; t++) {
+      await sleep(1500);
+      try {
+        const ur = await send('Runtime.evaluate', { expression: 'document.location.href' });
+        const curUrl = ur.result && ur.result.value || '';
+        
+        // 检测验证码
+        if (curUrl.includes('verify') || curUrl.includes('passport') || curUrl.includes('captcha')) {
+          toast('检测到验证码，请在浏览器中完成验证…', 'if');
+          await sleepFor(() => !ST.stop, 5000);
+          continue;
+        }
+        
+        // 检查是否到达详情页
+        if (curUrl && (curUrl.includes('job_detail') || curUrl.includes('zhipin.com/web') || curUrl.includes('zhipin.com/mobile'))) {
+          loaded = true;
+          break;
+        }
+        
+        // 如果 URL 没变化但页面可能有内容，也尝试提取
+        if (t > 3 && curUrl === url) {
+          loaded = true;
+          break;
+        }
+      } catch (e) {
+        if (e.message !== 'timeout') {
+          console.error('检查URL失败:', e.message);
+        }
+      }
+    }
+
+    if (!loaded) {
+      console.warn('页面未加载成功');
+      ws.close();
+      return;
+    }
+
+    await sleep(2000);
+
+    // 6. 提取数据
+    const js = `(function(){
+      var r={};
+      // 尝试多种选择器
+      var d=document.querySelector('.job-detail')||document.querySelector('.job-desc')||
+             document.querySelector('.detail-content')||document.querySelector('.job-sec')||
+             document.querySelector('.sec-bd')||document.body;
+      r.desc=(d.textContent||'').trim().substring(0,3000);
+      r.company=(document.querySelector('.company-name')||document.querySelector('[class*="company"]')||document.querySelector('h2')||{}).textContent||'';
+      r.company=r.company.trim().substring(0,100);
+      r.address=(document.querySelector('.job-address')||document.querySelector('[class*="address"]')||document.querySelector('[class*="loc"]')||{}).textContent||'';
+      r.address=r.address.trim().substring(0,200);
+      // 获取列表项
+      var items=[];
+      var ps=d.querySelectorAll('p');
+      var lis=d.querySelectorAll('li');
+      ps.forEach(function(p){var t=p.textContent.trim();if(t&&t.length>5&&t.length<300)items.push(t);});
+      lis.forEach(function(li){var t=li.textContent.trim();if(t&&t.length>5&&t.length<300)items.push(t);});
+      r.items=items.slice(0,50);
+      return JSON.stringify(r);
+    })()`;
+
+    let data = {};
+    try {
+      const er = await send('Runtime.evaluate', { expression: js });
+      data = JSON.parse(er.result && er.result.value || '{}');
+    } catch (e) {
+      console.error('提取数据失败:', e);
+    }
+
+    // 7. 分离职责和要求
+    const items = data.items || [];
+    const duties = [];
+    const reqs = [];
+    let inReq = false;
+    for (const l of items) {
+      const ll = l.toLowerCase();
+      if ((ll.includes('要求') || ll.includes('任职') || ll.includes(' qualification')) && l.length < 80) {
+        inReq = true;
+        continue;
+      }
+      if (inReq) reqs.push(l);
+      else duties.push(l);
+    }
+
+    // 8. 合并到 JOBS
+    const job = JOBS[jobIdx];
+    if (!job.duties && !job.desc) job.duties = (data.desc || '').substring(0, 800) || duties.join('\n');
+    if (!job.requirements) job.requirements = reqs.join('\n');
+    if (data.company && !job.company) job.company = data.company;
+    if (data.address && !job.location) job.location = data.address;
+    if (!job.hasDesc && (job.duties || job.requirements)) job.hasDesc = true;
+
+    ST.results.push({ link: job.link, duties: job.duties, requirements: job.requirements });
+    save();
+
+    ws.close();
+  } catch (e) {
+    console.error('doCDP 错误:', e.message);
+    throw e;
+  }
+}
+
+function sleep(ms){return new Promise(r=>setTimeout(r,ms));}
+function sleepFor(fn,ms){return new Promise(r=>{const iv=setInterval(()=>{if(!fn()||ST.stop){clearInterval(iv);r();}},ms);});}
+
+function stopCrawl(){
+  ST.stop=true;
+  clearTimeout(PT);
+  toast('停止爬取，进度已保存','if');
+  setTimeout(onCrawlDone,500);
+}
+
+function onCrawlDone(){
+  ST.running=false;
+  document.getElementById('prog').classList.remove('on');
+  document.getElementById('btnGo').disabled=false;
+  document.getElementById('btnStop').disabled=true;
+  render();updStats();
+  setDot(ST.err>0?'error':'done',ST.err>0?'已完成(有错误)':'已完成');
+  toast('爬取完成！已抓取 '+ST.cur+' 个详情页','ok');
+}
+
+function updProg(){
+  const pct=ST.tot>0?(ST.cur/ST.tot*100).toFixed(1):0;
+  const elap=Math.round((Date.now()-ST.start)/1000);
+  document.getElementById('pFill').style.width=pct+'%';
+  document.getElementById('pPro').textContent=ST.cur+'/'+ST.tot;
+  document.getElementById('pJob').textContent=(JOBS[ST.todo[ST.cur]||0]||{}).name||'-';
+  document.getElementById('pErr').textContent=ST.err;
+  document.getElementById('pTime').textContent=elap+'s';
+}
+
+// ==================== 导出 ====================
+function expCSV(){
+  if(!JOBS.length){toast('无数据','er');return;}
+  const heads=['城市','职位名称','公司','地点','经验','学历','薪资','职责','要求','链接'];
+  const rows=[heads.join(',')];
+  JOBS.forEach(j=>{
+    rows.push(heads.map(h=>{
+      const v=j[h==='职责'?'duties':h==='要求'?'requirements':h==='地点'?'location':
+               h==='职位名称'?'name':h==='公司'?'company':h==='城市'?'city':
+               h==='薪资'?'salary':h==='经验'?'exp':h==='学历'?'edu':'link']||'';
+      return '"'+String(v).replace(/"/g,'""')+'"';
+    }).join(','));
+  });
+  const blob=new Blob(['\uFEFF'+rows.join('\r\n')],{type:'text/csv;charset=utf-8'});
+  dl(blob,'JD_Hunter_详情_'+fmtDate()+'.csv');
+}
+
+function expXLS(){
+  if(!JOBS.length){toast('无数据','er');return;}
+  // 简单HTML表格导出（Excel可识别）
+  const heads=['城市','职位名称','公司','地点','经验','学历','薪资','职责','要求','链接'];
+  let html='<table><thead><tr>'+heads.map(h=>`<th>${h}</th>`).join('')+'</tr></thead><tbody>';
+  JOBS.forEach(j=>{
+    html+='<tr>'+heads.map(h=>{
+      const v=j[h==='职责'?'duties':h==='要求'?'requirements':h==='地点'?'location':
+               h==='职位名称'?'name':h==='公司'?'company':h==='城市'?'city':
+               h==='薪资'?'salary':h==='经验'?'exp':h==='学历'?'edu':'link']||'';
+      return `<td>${v.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>')}</td>`;
+    }).join('')+'</tr>';
+  });
+  html+='</tbody></table>';
+  const blob=new Blob(['<html><meta charset="utf-8"><body>'+html+'</body></html>'],{type:'application/vnd.ms-excel'});
+  dl(blob,'JD_Hunter_详情_'+fmtDate()+'.xls');
+}
+
+function dl(blob,name){
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);
+  a.download=name;a.click();URL.revokeObjectURL(a.href);
+}
+
+function fmtDate(){const d=new Date();return`${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`;}
+
+// ==================== 目录保存功能 ====================
+let SAVE_DIR_HANDLE = null; // 保存目录句柄
+
+async function selectDir(){
+  try {
+    // 使用 File System Access API 选择目录
+    SAVE_DIR_HANDLE = await window.showDirectoryPicker({
+      mode: 'readwrite'
+    });
+    toast('✅ 已选择保存目录: ' + SAVE_DIR_HANDLE.name, 'ok');
+    // 保存到 localStorage
+    localStorage.setItem('jd_hunter_saveDir', SAVE_DIR_HANDLE.name);
+  } catch (e) {
+    if (e.name !== 'AbortError') {
+      toast('请使用 Chrome/Edge 浏览器', 'er');
+    }
+  }
+}
+
+async function saveToDir(filename, content){
+  if (SAVE_DIR_HANDLE) {
+    try {
+      const fileHandle = await SAVE_DIR_HANDLE.getFileHandle(filename, { create: true });
+      const writable = await fileHandle.createWritable();
+      await writable.write(content);
+      await writable.close();
+      toast('✅ 已保存到 ' + SAVE_DIR_HANDLE.name + '/' + filename, 'ok');
+      return true;
+    } catch (e) {
+      console.error('保存失败:', e);
+      toast('保存失败，改为下载', 'er');
+    }
+  }
+  return false;
+}
+
+function expCSV(){
+  if(!JOBS.length){toast('无数据','er');return;}
+  const heads=['城市','职位名称','公司','地点','经验','学历','薪资','职责','要求','链接'];
+  const rows=[heads.join(',')];
+  JOBS.forEach(j=>{
+    rows.push(heads.map(h=>{
+      const v=j[h==='职责'?'duties':h==='要求'?'requirements':h==='地点'?'location':
+               h==='职位名称'?'name':h==='公司'?'company':h==='城市'?'city':
+               h==='薪资'?'salary':h==='经验'?'exp':h==='学历'?'edu':'link']||'';
+      return '"'+String(v).replace(/"/g,'""')+'"';
+    }).join(','));
+  });
+  const content = '\uFEFF'+rows.join('\r\n');
+  const filename = 'JD_Hunter_'+fmtDate()+'.csv';
+  
+  // 优先保存到指定目录
+  if(SAVE_DIR_HANDLE){
+    saveToDir(filename, content);
+  } else {
+    const blob=new Blob([content],{type:'text/csv;charset=utf-8'});
+    dl(blob, filename);
+  }
+}
+
+function expXLS(){
+  if(!JOBS.length){toast('无数据','er');return;}
+  const heads=['城市','职位名称','公司','地点','经验','学历','薪资','职责','要求','链接'];
+  let html='<table><thead><tr>'+heads.map(h=>`<th>${h}</th>`).join('')+'</tr></thead><tbody>';
+  JOBS.forEach(j=>{
+    html+='<tr>'+heads.map(h=>{
+      const v=j[h==='职责'?'duties':h==='要求'?'requirements':h==='地点'?'location':
+               h==='职位名称'?'name':h==='公司'?'company':h==='城市'?'city':
+               h==='薪资'?'salary':h==='经验'?'exp':h==='学历'?'edu':'link']||'';
+      return `<td>${v.replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>')}</td>`;
+    }).join('')+'</tr>';
+  });
+  html+='</tbody></table>';
+  const content = '<html><meta charset="utf-8"><body>'+html+'</body></html>';
+  const filename = 'JD_Hunter_'+fmtDate()+'.xls';
+  
+  if(SAVE_DIR_HANDLE){
+    saveToDir(filename, content);
+  } else {
+    const blob=new Blob([content],{type:'application/vnd.ms-excel'});
+    dl(blob, filename);
+  }
+}
+
+// ==================== GitHub 同步 ====================
+function ghGetConfig(){
+  return {
+    user: document.getElementById('ghUser').value.trim(),
+    repo: document.getElementById('ghRepo').value.trim(),
+    token: document.getElementById('ghToken').value.trim(),
+    file: document.getElementById('ghFile').value.trim() || 'jobs_data.json'
+  };
+}
+
+async function ghApi(method, path, data){
+  const cfg = ghGetConfig();
+  if(!cfg.token || !cfg.user || !cfg.repo){
+    throw new Error('请填写 GitHub 配置（用户、仓库、Token）');
+  }
+  
+  const url = `https://api.github.com/repos/${cfg.user}/${cfg.repo}/contents/${cfg.file}${path}`;
+  
+  const res = await fetch(url, {
+    method: method,
+    headers: {
+      'Authorization': 'token ' + cfg.token,
+      'User-Agent': 'JD-Hunter',
+      'Content-Type': 'application/json'
+    },
+    body: data ? JSON.stringify(data) : undefined
+  });
+  
+  if(!res.ok){
+    const err = await res.json().catch(()=>({message: res.statusText}));
+    throw new Error(err.message || 'API 错误: ' + res.status);
+  }
+  
+  return res.json();
+}
+
+async function ghPush(){
+  if(!JOBS.length){toast('没有数据可上传','er');return;}
+  
+  const btn = document.getElementById('btnPush');
+  btn.disabled = true;
+  btn.textContent = '⏳ 上传中...';
+  
+  try{
+    const cfg = ghGetConfig();
+    if(!cfg.token || !cfg.user || !cfg.repo){
+      toast('请填写 GitHub 配置','er');return;
+    }
+    
+    toast('正在上传到 GitHub...','if');
+    
+    // 获取现有文件的 SHA（如果存在）
+    let sha = null;
+    try{
+      const existing = await ghApi('GET', '');
+      sha = existing.sha;
+    }catch(e){
+      // 文件不存在，正常
+    }
+    
+    // 准备上传数据
+    const content = JSON.stringify({
+      jobs: JOBS,
+      updated: new Date().toISOString(),
+      count: JOBS.length
+    }, null, 2);
+    
+    const encoded = btoa(unescape(encodeURIComponent(content)));
+    
+    const data = {
+      message: `更新职位数据 ${new Date().toLocaleString()}`,
+      content: encoded
+    };
+    if(sha) data.sha = sha;
+    
+    await ghApi('PUT', '', data);
+    
+    lastSyncTime = Date.now();
+    updateAutoSyncStatus();
+    toast('✅ 上传成功！','ok');
+  }catch(e){
+    console.error('上传失败:', e);
+    toast('上传失败: ' + e.message,'er');
+  }finally{
+    btn.disabled = false;
+    btn.textContent = '⬆️ 上传';
+  }
+}
+
+async function ghPull(){
+  const btn = document.getElementById('btnPull');
+  btn.disabled = true;
+  btn.textContent = '⏳ 拉取中...';
+  
+  try{
+    const cfg = ghGetConfig();
+    if(!cfg.token || !cfg.user || !cfg.repo){
+      toast('请填写 GitHub 配置','er');return;
+    }
+    
+    toast('正在从 GitHub 拉取...','if');
+    
+    const data = await ghApi('GET', '');
+    
+    if(!data.content){
+      toast('未找到数据文件','er');
+      return;
+    }
+    
+    // 解码内容
+    const content = atob(data.content);
+    const parsed = JSON.parse(content);
+    
+    if(parsed.jobs && Array.isArray(parsed.jobs)){
+      const count = parsed.jobs.length;
+      JOBS = parsed.jobs;
+      save();
+      buildFlt();
+      filtr();
+      updStats();
+      toast(`✅ 成功拉取 ${count} 条数据！`,'ok');
+    }else{
+      toast('数据格式不正确','er');
+    }
+  }catch(e){
+    console.error('拉取失败:', e);
+    toast('拉取失败: ' + e.message,'er');
+  }finally{
+    btn.disabled = false;
+    btn.textContent = '⬇️ 拉取';
+  }
+}
+
+// 初始化时从 localStorage 恢复 GitHub 配置
+(function(){
+  try{
+    const cfg = JSON.parse(localStorage.getItem('jd_hunter_gh') || '{}');
+    if(cfg.user) document.getElementById('ghUser').value = cfg.user;
+    if(cfg.repo) document.getElementById('ghRepo').value = cfg.repo;
+    if(cfg.token) document.getElementById('ghToken').value = cfg.token;
+    if(cfg.file) document.getElementById('ghFile').value = cfg.file;
+  }catch(e){}
+  
+  // 保存配置变化
+  ['ghUser','ghRepo','ghToken','ghFile'].forEach(id => {
+    document.getElementById(id).addEventListener('change', saveGhConfig);
+  });
+  
+  // 恢复自动同步设置
+  const interval = localStorage.getItem('jd_hunter_autoInterval');
+  if (interval) document.getElementById('ghAutoInterval').value = interval;
+  
+  // 监听自动同步设置变化
+  document.getElementById('ghAutoInterval').addEventListener('change', function(){
+    localStorage.setItem('jd_hunter_autoInterval', this.value);
+    setupAutoSync();
+  });
+  
+  setupAutoSync();
+})();
+
+function saveGhConfig(){
+  try{
+    localStorage.setItem('jd_hunter_gh', JSON.stringify({
+      user: document.getElementById('ghUser').value,
+      repo: document.getElementById('ghRepo').value,
+      token: document.getElementById('ghToken').value,
+      file: document.getElementById('ghFile').value
+    }));
+  }catch(e){}
+}
+
+// ==================== 自动同步 ====================
+let autoSyncTimer = null;
+let lastSyncTime = 0;
+
+function setupAutoSync(){
+  // 清除现有定时器
+  if (autoSyncTimer) {
+    clearInterval(autoSyncTimer);
+    autoSyncTimer = null;
+  }
+  
+  const interval = parseInt(document.getElementById('ghAutoInterval').value) || 0;
+  
+  if (interval > 0) {
+    // 启动定时同步
+    autoSyncTimer = setInterval(async () => {
+      if (JOBS.length > 0) {
+        try {
+          await ghPush();
+        } catch (e) {
+          console.error('自动同步失败:', e);
+        }
+      }
+    }, interval * 1000);
+    
+    updateAutoSyncStatus();
+  } else {
+    document.getElementById('ghAutoStatus').textContent = '';
+  }
+}
+
+function updateAutoSyncStatus(){
+  const interval = parseInt(document.getElementById('ghAutoInterval').value) || 0;
+  if (interval > 0 && lastSyncTime > 0) {
+    const ago = Math.round((Date.now() - lastSyncTime) / 1000);
+    let text = '';
+    if (ago < 60) text = `已同步 ${ago}秒前`;
+    else if (ago < 3600) text = `已同步 ${Math.round(ago/60)}分钟前`;
+    else text = `已同步 ${Math.round(ago/3600)}小时前`;
+    document.getElementById('ghAutoStatus').textContent = text;
+  }
+}
+
+// 每分钟更新同步状态显示
+setInterval(updateAutoSyncStatus, 60000);
+
+// ==================== 代码版本更新检测 ====================
+// 从 GitHub 读取远程版本号（使用 raw.githubusercontent.com，无 CORS 限制）
+async function checkCodeUpdate() {
+  const btn = document.getElementById('btnUpdateCode');
+  btn.disabled = true;
+  btn.textContent = '⏳ 检查中...';
+  
+  try {
+    const cfg = ghGetConfig();
+    if (!cfg.user || !cfg.repo) {
+      // 没有配置时使用默认仓库
+      cfg.user = 'KLdididi';
+      cfg.repo = 'jd_hunter';
+    }
+    
+    // 尝试获取远程版本号
+    const url = `https://raw.githubusercontent.com/${cfg.user}/${cfg.repo}/main/version.json`;
+    let remoteVersion = null;
+    let remoteChangelog = null;
+    
+    try {
+      const ac = new AbortController();
+      const to = setTimeout(() => ac.abort(), 8000);
+      const res = await fetch(url, { signal: ac.signal });
+      clearTimeout(to);
+      if (res.ok) {
+        const data = await res.json();
+        remoteVersion = data.version;
+        remoteChangelog = data.changelog;
+      }
+    } catch (e) {
+      // 尝试 master 分支
+      const url2 = `https://raw.githubusercontent.com/${cfg.user}/${cfg.repo}/master/version.json`;
+      try {
+        const ac2 = new AbortController();
+        const to2 = setTimeout(() => ac2.abort(), 8000);
+        const res2 = await fetch(url2, { signal: ac2.signal });
+        clearTimeout(to2);
+        if (res2.ok) {
+          const data = await res2.json();
+          remoteVersion = data.version;
+          remoteChangelog = data.changelog;
+        }
+      } catch (e2) {}
+    }
+    
+    if (!remoteVersion) {
+      toast('无法获取远程版本信息', 'er');
+      btn.textContent = '🔔 检查更新';
+      btn.disabled = false;
+      return;
+    }
+    
+    // 比较版本
+    if (compareVersion(remoteVersion, APP_VERSION) > 0) {
+      console.log('[手动检查] 发现新版本:', remoteVersion);
+      
+      // 创建包含版本和更新日志的数据对象
+      const remoteData = {
+        version: remoteVersion,
+        changelog: remoteChangelog
+      };
+      
+      // 显示漂亮的更新公告弹窗
+      showUpdateAnnouncement(remoteVersion, remoteData);
+      
+      // 也可以自动开始下载
+      setTimeout(async () => {
+        await applyCodeUpdate(cfg.user, cfg.repo);
+      }, 2000);
+    } else {
+      toast(`✅ 当前已是最新版本 v${APP_VERSION}`, 'ok');
+    }
+  } catch (e) {
+    console.error('检查更新失败:', e);
+    toast('检查更新失败: ' + e.message, 'er');
+  } finally {
+    btn.textContent = '🔔 检查更新';
+    btn.disabled = false;
+  }
+}
+
+// 版本比较：返回正数表示 v1 > v2
+function compareVersion(v1, v2) {
+  const a1 = v1.split('.').map(n => parseInt(n) || 0);
+  const a2 = v2.split('.').map(n => parseInt(n) || 0);
+  for (let i = 0; i < Math.max(a1.length, a2.length); i++) {
+    const n1 = a1[i] || 0;
+    const n2 = a2[i] || 0;
+    if (n1 > n2) return 1;
+    if (n1 < n2) return -1;
+  }
+  return 0;
+}
+
+// 应用代码更新
+async function applyCodeUpdate(user, repo) {
+  const btn = document.getElementById('btnUpdateCode');
+  btn.textContent = '⏳ 下载中...';
+  btn.disabled = true;
+  
+  try {
+    toast('正在下载最新代码...', 'if');
+    
+    // 获取远程 HTML 文件内容
+    const htmlUrl = `https://raw.githubusercontent.com/${user}/${repo}/main/jd_hunter.html`;
+    let htmlContent = null;
+    let versionData = null;
+    
+    try {
+      const ac = new AbortController();
+      const to = setTimeout(() => ac.abort(), 10000);
+      const res = await fetch(htmlUrl, { signal: ac.signal });
+      clearTimeout(to);
+      if (res.ok) {
+        htmlContent = await res.text();
+      }
+    } catch (e) {
+      // 尝试 master 分支
+      const ac2 = new AbortController();
+      const to2 = setTimeout(() => ac2.abort(), 10000);
+      const res2 = await fetch(`https://raw.githubusercontent.com/${user}/${repo}/master/jd_hunter.html`, { signal: ac2.signal });
+      clearTimeout(to2);
+      if (res2.ok) {
+        htmlContent = await res2.text();
+      }
+    }
+    
+    // 获取版本信息
+    try {
+      const ac3 = new AbortController();
+      const to3 = setTimeout(() => ac3.abort(), 8000);
+      const versionRes = await fetch(`https://raw.githubusercontent.com/${user}/${repo}/main/version.json`, { signal: ac3.signal });
+      clearTimeout(to3);
+      if (versionRes.ok) {
+        versionData = await versionRes.json();
+      }
+    } catch (e) {
+      try {
+        const ac4 = new AbortController();
+        const to4 = setTimeout(() => ac4.abort(), 8000);
+        const versionRes2 = await fetch(`https://raw.githubusercontent.com/${user}/${repo}/master/version.json`, { signal: ac4.signal });
+        clearTimeout(to4);
+        if (versionRes2.ok) {
+          versionData = await versionRes2.json();
+        }
+      } catch (e2) {}
+    }
+    
+    if (!htmlContent) {
+      throw new Error('无法下载最新代码');
+    }
+    
+    // 将新代码保存到本地文件
+    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    
+    // 创建一个下载链接
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'jd_hunter_new.html';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    
+    toast('✅ 新版本已下载为 jd_hunter_new.html\n请用新文件替换原文件', 'ok');
+    
+    // 同时保存到 localStorage 作为备份
+    localStorage.setItem('jd_hunter_backup_' + Date.now(), htmlContent);
+    
+  } catch (e) {
+    console.error('更新失败:', e);
+    toast('更新失败: ' + e.message, 'er');
+    btn.textContent = '🔔 检查更新';
+    btn.disabled = false;
+  }
+}
+
+// 创建GitHub发布公告
+async function createReleaseAnnouncement(user, repo, token, version, changelog) {
+  try {
+    toast('正在创建GitHub发布公告...', 'if');
+    
+    const url = `https://api.github.com/repos/${user}/${repo}/releases`;
+    
+    // 获取当前日期
+    const now = new Date();
+    const dateStr = now.toISOString().split('T')[0];
+    
+    // 准备发布内容 - 确保格式正确
+    const releaseBody = `# 🎉 JD Hunter 版本更新 v${version}
+
+**更新日期:** ${dateStr}
+
+## 📝 更新内容
+${changelog || '暂无更新说明'}
+
+## 🔧 更新方式
+1. 下载新的 jd_hunter_new.html 文件
+2. 替换原文件
+3. 刷新页面即可使用新版本
+
+## 📊 当前功能
+- BOSS直聘职位详情抓取
+- 数据导入/导出（CSV/Excel）
+- GitHub数据同步
+- 自动更新检测
+
+## ⚠️ 注意事项
+- 请确保Edge浏览器已登录BOSS直聘账号
+- 使用前请先启动本地代理
+
+**GitHub:** https://github.com/${user}/${repo}`;
+    
+    const releaseData = {
+      tag_name: `v${version}`,
+      name: `v${version} - ${dateStr}`,
+      body: releaseBody,
+      draft: false,
+      prerelease: false,
+      generate_release_notes: false
+    };
+    
+    console.log('[GitHub Release] 创建请求:', {
+      url,
+      tag_name: releaseData.tag_name,
+      name: releaseData.name
+    });
+    
+    const response = await fetch(url, {
+      method: 'POST',
+      headers: {
+        'Authorization': `token ${token}`,
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json',
+        'User-Agent': 'JD-Hunter-Agent'
+      },
+      body: JSON.stringify(releaseData)
+    });
+    
+    const responseText = await response.text();
+    console.log('[GitHub Release] 响应状态:', response.status, response.statusText);
+    console.log('[GitHub Release] 响应内容:', responseText.substring(0, 500));
+    
+    if (!response.ok) {
+      let errorMessage = '创建发布失败';
+      try {
+        const errorData = JSON.parse(responseText);
+        errorMessage = errorData.message || errorMessage;
+      } catch (e) {
+        errorMessage = responseText || errorMessage;
+      }
+      throw new Error(`HTTP ${response.status}: ${errorMessage}`);
+    }
+    
+    const result = JSON.parse(responseText);
+    toast(`✅ GitHub发布创建成功！\n发布地址: ${result.html_url}`, 'ok');
+    return result;
+    
+  } catch (error) {
+    console.error('创建发布失败:', error);
+    toast(`创建GitHub发布失败: ${error.message}`, 'er');
+    throw error;
+  }
+}
+
+// 手动发布版本公告
+async function publishReleaseManually() {
+  try {
+    const cfg = ghGetConfig();
+    if (!cfg.user || !cfg.repo || !cfg.token) {
+      toast('请先填写GitHub配置（用户、仓库、Token）', 'er');
+      return;
+    }
+    
+    const version = APP_VERSION;
+    const changelog = CHANGELOG.find(log => log.version === version);
+    const changelogText = changelog ? changelog.notes.join('\n- ') : '性能优化和bug修复';
+    
+    toast('正在创建发布公告...', 'if');
+    
+    const result = await createReleaseAnnouncement(cfg.user, cfg.repo, cfg.token, version, changelogText);
+    
+    if (result) {
+      // 同时更新本地版本号显示
+      document.getElementById('verTag').textContent = `v${version} ✓`;
+    }
+    
+  } catch (error) {
+    console.error('手动发布失败:', error);
+  }
+}
+
+// 页面加载时自动检查更新（24小时静默一次，低打扰通知）
+(function autoCheckUpdate() {
+  var LAST_CHECK_KEY = 'jd_hunter_last_check';
+  var CHECK_INTERVAL = 24 * 60 * 60 * 1000; // 24小时
+  
+  (async function() {
+    try {
+      var lastCheck = parseInt(localStorage.getItem(LAST_CHECK_KEY) || '0');
+      var now = Date.now();
+      
+      // 24小时内已检查过，静默跳过
+      if (lastCheck && (now - lastCheck) < CHECK_INTERVAL) {
+        console.log('[自动更新] ' + Math.round((CHECK_INTERVAL - (now - lastCheck)) / 3600000) + '小时后再次检查');
+        return;
+      }
+      
+      // 记录检查时间
+      localStorage.setItem(LAST_CHECK_KEY, now.toString());
+      
+      var versionData = null;
+      
+      // 获取远程版本
+      try {
+        var ac = new AbortController();
+        var to = setTimeout(() => ac.abort(), 8000);
+        var res = await fetch('https://raw.githubusercontent.com/KLdididi/jd_hunter/main/version.json', { cache: 'no-cache', signal: ac.signal });
+        clearTimeout(to);
+        if (res.ok) versionData = await res.json();
+      } catch (_) {}
+      
+      if (!versionData || !versionData.version) return;
+      
+      var remoteVersion = versionData.version;
+      console.log('[自动更新] 本地:', APP_VERSION, '远程:', remoteVersion);
+      
+      // 仅发现新版本时显示横幅，不打断用户
+      if (compareVersion(remoteVersion, APP_VERSION) > 0) {
+        var banner = document.getElementById('updateBanner');
+        if (banner) banner.remove();
+        
+        banner = document.createElement('div');
+        banner.id = 'updateBanner';
+        banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:linear-gradient(90deg,#10b981,#06b6d4);color:#fff;padding:12px 20px;display:flex;align-items:center;justify-content:center;gap:16px;font-size:.9rem;z-index:999999;box-shadow:0 4px 20px rgba(0,0,0,.3)';
+        banner.innerHTML = '<span>🎉 发现新版本 <b>v' + remoteVersion + '</b></span>'
+          + '<button id="bannerDetail" style="background:rgba(255,255,255,.2);border:1px solid rgba(255,255,255,.4);color:#fff;padding:4px 14px;border-radius:6px;cursor:pointer;font-size:.82rem">查看详情</button>'
+          + '<button onclick="document.getElementById(\'updateBanner\').remove()" style="background:none;border:none;color:#fff;font-size:1.2rem;cursor:pointer;padding:0 4px;margin-left:8px">×</button>';
+        document.body.prepend(banner);
+        
+        document.getElementById('bannerDetail').onclick = function() {
+          showUpdateAnnouncement(remoteVersion, versionData);
+        };
+      }
+    } catch (e) {
+      console.log('[自动更新] 跳过:', e.message);
+    }
+  })();
+})();
+
+// ==================== 工具 ====================
+function save(){
+  try{localStorage.setItem('jd_hunter_jobs',JSON.stringify(JOBS));}catch(e){}
+}
+function esc(s){return s==null?'':String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');}
+function debounce(fn,ms){let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>fn(...a),ms);};}
+
+// 显示更新公告弹窗
+function showUpdateAnnouncement(newVersion, remoteData) {
+  console.log('[更新公告] 显示公告弹窗，新版本:', newVersion, '远程数据:', remoteData);
+  
+  // 获取更新内容
+  let updateContent = '';
+  let remoteChangelog = null;  // 定义这个变量，以便后面使用
+  
+  if (remoteData && remoteData.changelog) {
+    // 从远程数据中获取更新日志
+    remoteChangelog = remoteData.changelog.find(log => log.version === newVersion);
+    if (remoteChangelog && remoteChangelog.notes) {
+      updateContent = remoteChangelog.notes.map(note => `• ${note}`).join('<br>');
+    }
+  }
+  
+  // 如果远程数据中没有更新日志，显示默认内容
+  if (!updateContent) {
+    updateContent = `
+      • 自动更新检测功能优化<br>
+      • 新增更新公告弹窗系统<br>
+      • 错误处理和网络请求改进<br>
+      • 用户体验和界面优化<br>
+      • 数据备份和同步增强<br>
+      • GitHub集成功能完善
+    `;
+  }
+  
+  const announcementHTML = `
+<div id="updateAnnouncement" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:9999999;display:flex;align-items:center;justify-content:center;">
+  <div style="background:white;border-radius:16px;padding:30px;max-width:600px;max-height:80vh;overflow:auto;box-shadow:0 10px 50px rgba(0,0,0,0.3);position:relative;">
+    <button onclick="document.getElementById('updateAnnouncement').remove()" style="position:absolute;top:15px;right:15px;background:none;border:none;font-size:24px;cursor:pointer;color:#888;">✕</button>
+    
+    <div style="text-align:center;margin-bottom:25px;">
+      <div style="font-size:32px;color:#667eea;margin-bottom:10px;">🎉 发现新版本！</div>
+      <div style="font-size:20px;font-weight:bold;color:#333;">JD Hunter v${newVersion}</div>
+      <div style="color:#666;margin-top:5px;">当前版本: v${APP_VERSION}</div>
+    </div>
+    
+    <div style="background:#f8f9fa;border-radius:10px;padding:20px;margin-bottom:25px;">
+      <div style="font-size:16px;font-weight:bold;color:#333;margin-bottom:10px;">📝 更新内容</div>
+      <div style="color:#444;line-height:1.6;">
+        ${updateContent}
+      </div>
+    </div>
+    
+    <div style="background:#f0f9ff;border-radius:10px;padding:20px;margin-bottom:25px;">
+      <div style="font-size:16px;font-weight:bold;color:#333;margin-bottom:10px;">⬇️ 已自动下载</div>
+      <div style="color:#444;line-height:1.6;">
+        新版本文件 <code>jd_hunter_new.html</code> 已下载完成！
+      </div>
+    </div>
+    
+    <div style="background:#fff8f0;border-radius:10px;padding:20px;margin-bottom:25px;">
+      <div style="font-size:16px;font-weight:bold;color:#333;margin-bottom:10px;">🔧 更新方法</div>
+      <ol style="color:#444;line-height:1.8;padding-left:20px;">
+        <li>找到下载的 <code>jd_hunter_new.html</code> 文件</li>
+        <li>用新文件替换当前页面文件</li>
+        <li>刷新页面即可使用新版本</li>
+        <li>您当前的数据已自动备份到localStorage</li>
+      </ol>
+    </div>
+    
+    <div style="display:flex;gap:15px;justify-content:center;">
+      <button onclick="document.getElementById('updateAnnouncement').remove();" style="padding:12px 25px;background:#e9ecef;border:none;border-radius:8px;font-size:16px;cursor:pointer;color:#666;">稍后更新</button>
+      <button onclick="createReleaseAnnouncement('KLdididi', 'jd_hunter', '', '${newVersion}', '${updateContent.replace(/<br>/g, '\\n- ').replace(/• /g, '')}'); document.getElementById('updateAnnouncement').remove();" style="padding:12px 25px;background:linear-gradient(90deg,#667eea,#764ba2);border:none;border-radius:8px;font-size:16px;cursor:pointer;color:white;font-weight:bold;">🎯 创建发布公告</button>
+      <button onclick="location.reload();" style="padding:12px 25px;background:#4CAF50;border:none;border-radius:8px;font-size:16px;cursor:pointer;color:white;font-weight:bold;">🔄 立即刷新</button>
+    </div>
+    
+    <div style="margin-top:20px;text-align:center;font-size:13px;color:#888;">
+      数据已自动备份到 localStorage，更新不会丢失您的数据
+    </div>
+  </div>
+</div>
+  `;
+  
+  // 清除可能的重复弹窗
+  const existingAnnouncement = document.getElementById('updateAnnouncement');
+  if (existingAnnouncement) {
+    existingAnnouncement.remove();
+  }
+  
+  // 添加新弹窗
+  document.body.insertAdjacentHTML('beforeend', announcementHTML);
+  
+  // 自动创建GitHub发布公告（可选）
+  setTimeout(async () => {
+    try {
+      const cfg = ghGetConfig();
+      if (cfg.user && cfg.repo && cfg.token) {
+        console.log('[更新公告] 尝试自动创建GitHub Release...');
+        await createReleaseAnnouncement(cfg.user, cfg.repo, cfg.token, newVersion, 
+          remoteChangelog ? remoteChangelog.notes.join('\n- ') : '性能优化和bug修复');
+      }
+    } catch (e) {
+      console.log('[更新公告] 自动创建失败:', e.message);
+    }
+  }, 1000);
+}
+
+// 更新日志弹窗
+function showChangelog() {
+  const changelog = `
+📅 更新日志
+━━━━━━━━━━━━━━━━━━━━
+
+🔖 v1.0.5 (2026-04-13)
+• 修复：自动更新公告功能
+• 新增：GitHub发布公告功能
+• 优化：版本检测逻辑
+
+🔖 v1.0.4 (2026-04-13)
+• 修复：本地版本号未同步问题
+• 新增：添加调试日志，方便排查问题
+
+🔖 v1.0.3 (2026-04-13)
+• 新增：「全部数据」按钮，可查看所有数据
+• 新增：表格显示每条数据的抓取状态
+• 新增：可直接导出全部数据为CSV/JSON
+
+🔖 v1.0.2 (2026-04-13)
+• 修复：数据保存问题
+• 新增：更新日志公告
+
+🔖 v1.0.1 (2026-04-13)
+• 新增：自动检测并下载GitHub新版本
+• 新增：页面顶部版本号可点击查看日志
+
+🔖 v1.0.0 (2026-04-13)
+• 初始版本
+• 支持BOSS直聘职位列表抓取
+• 支持详情页抓取
+• 支持CSV/Excel导出
+• 支持GitHub数据同步
+  `;
+  
+  const overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:99999;display:flex;align-items:center;justify-content:center';
+  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
+  
+  const box = document.createElement('div');
+  box.style.cssText = 'background:var(--bg2);border:1px solid var(--bg4);border-radius:12px;padding:24px;max-width:400px;width:90%;max-height:70vh;overflow-y:auto';
+  box.innerHTML = `
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <h2 style="color:var(--green)">📋 更新日志</h2>
+      <button onclick="this.closest('.changelog-overlay').remove()" style="background:none;border:none;color:var(--text3);font-size:1.5rem;cursor:pointer">×</button>
+    </div>
+    <pre style="color:var(--text2);font-size:.9rem;line-height:1.6;white-space:pre-wrap">${changelog}</pre>
+  `;
+  overlay.className = 'changelog-overlay';
+  overlay.appendChild(box);
+  document.body.appendChild(overlay);
+}
+
+function setDot(type,text){
+  const dot=document.getElementById('dot');
+  dot.className='status-dot '+(type==='idle'?'':(type==='crawl'?'crawl':type==='done'?'done':type==='error'?'error':'live'));
+  document.getElementById('status').textContent=text;
+}
+function toast(msg,type='ok'){
+  const t=document.getElementById('toast');
+  t.textContent=msg;t.className='toast '+type+' sh';
+  setTimeout(()=>t.classList.remove('sh'),3500);
+}
+
+// verTag动态更新（由初始化函数完成）
+// 自动更新检查已由 autoCheckUpdate 立即执行函数处理
+</script>
+</body>
+</html>
