@@ -334,11 +334,19 @@ tbody tr.hi{background:rgba(245,158,11,.05)}
 
 <script>
 // ==================== 版本和更新日志 ====================
-const APP_VERSION = '1.1.0';  // 代码版本号
+const APP_VERSION = '1.1.1';  // 代码版本号
 
 // 更新日志
 const CHANGELOG = [
   {
+    version: '1.1.1',
+    date: '2026-04-14',
+    notes: [
+      '📋 优化更新日志弹窗显示（显示最近5个版本）',
+      '🎨 优化弹窗样式和布局',
+      '💡 新增使用提示信息'
+    ]
+  },{
     version: '1.1.0',
     date: '2026-04-14',
     notes: [
@@ -1850,213 +1858,63 @@ function debounce(fn,ms){let t;return(...a)=>{clearTimeout(t);t=setTimeout(()=>f
 
 // 显示更新公告弹窗
 function showUpdateAnnouncement(newVersion, remoteData) {
-  console.log('[更新公告] 显示公告弹窗，新版本:', newVersion, '远程数据:', remoteData);
+  console.log('[更新公告] 显示公告弹窗，版本:', newVersion);
   
-  // 获取更新内容
-  let updateContent = '';
-  let remoteChangelog = null;  // 定义这个变量，以便后面使用
+  // 生成完整更新日志 HTML
+  let changelogHTML = '';
   
-  if (remoteData && remoteData.changelog) {
-    // 从远程数据中获取更新日志
-    remoteChangelog = remoteData.changelog.find(log => log.version === newVersion);
-    if (remoteChangelog && remoteChangelog.notes) {
-      updateContent = remoteChangelog.notes.map(note => `• ${note}`).join('<br>');
-    }
-  }
+  // 显示最近5个版本的更新日志
+  const recentVersions = CHANGELOG.slice(0, 5);
   
-  // 如果远程数据中没有更新日志，显示默认内容
-  if (!updateContent) {
-    updateContent = `
-      • 自动更新检测功能优化<br>
-      • 新增更新公告弹窗系统<br>
-      • 错误处理和网络请求改进<br>
-      • 用户体验和界面优化<br>
-      • 数据备份和同步增强<br>
-      • GitHub集成功能完善
+  for (const ver of recentVersions) {
+    const isCurrent = ver.version === APP_VERSION;
+    const versionLabel = isCurrent ? 
+      `<span style="background:#667eea;color:white;padding:2px 8px;border-radius:4px;font-size:12px;margin-left:8px;">当前版本</span>` : '';
+    
+    changelogHTML += `
+      <div style="margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid #eee;">
+        <div style="font-size:15px;font-weight:bold;color:#333;margin-bottom:8px;">
+          🔖 v${ver.version} <span style="color:#888;font-weight:normal;font-size:12px;">(${ver.date})</span>${versionLabel}
+        </div>
+        <ul style="margin:0;padding-left:20px;color:#555;line-height:1.7;">
+          ${ver.notes.map(note => `<li>${note}</li>`).join('')}
+        </ul>
+      </div>
     `;
   }
   
   const announcementHTML = `
 <div id="updateAnnouncement" style="position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.8);z-index:9999999;display:flex;align-items:center;justify-content:center;">
-  <div style="background:white;border-radius:16px;padding:30px;max-width:600px;max-height:80vh;overflow:auto;box-shadow:0 10px 50px rgba(0,0,0,0.3);position:relative;">
+  <div style="background:white;border-radius:16px;padding:30px;max-width:650px;max-height:85vh;overflow:auto;box-shadow:0 10px 50px rgba(0,0,0,0.3);position:relative;">
     <button onclick="document.getElementById('updateAnnouncement').remove()" style="position:absolute;top:15px;right:15px;background:none;border:none;font-size:24px;cursor:pointer;color:#888;">✕</button>
     
     <div style="text-align:center;margin-bottom:25px;">
-      <div style="font-size:32px;color:#667eea;margin-bottom:10px;">📋 版本更新提醒</div>
-      <div style="font-size:20px;font-weight:bold;color:#333;">JD Hunter v${newVersion}</div>
-      <div style="color:#666;margin-top:5px;">当前版本: v${APP_VERSION}</div>
+      <div style="font-size:36px;margin-bottom:10px;">🎯 JD Hunter</div>
+      <div style="font-size:16px;color:#667eea;font-weight:bold;">版本 v${APP_VERSION}</div>
     </div>
     
-    <div style="background:#f8f9fa;border-radius:10px;padding:20px;margin-bottom:25px;">
-      <div style="font-size:16px;font-weight:bold;color:#333;margin-bottom:10px;">📝 更新内容</div>
-      <div style="color:#444;line-height:1.6;">
-        ${updateContent}
+    <div style="background:#f8f9fa;border-radius:10px;padding:20px;margin-bottom:20px;max-height:50vh;overflow-y:auto;">
+      <div style="font-size:16px;font-weight:bold;color:#333;margin-bottom:15px;">📝 更新日志</div>
+      ${changelogHTML}
+      <div style="text-align:center;color:#888;font-size:12px;margin-top:10px;">
+        查看完整更新日志请访问 GitHub 仓库
       </div>
     </div>
     
-    <div style="background:#f0f9ff;border-radius:10px;padding:20px;margin-bottom:25px;">
-      <div style="font-size:16px;font-weight:bold;color:#333;margin-bottom:10px;">⬇️ 已自动下载</div>
-      <div style="color:#444;line-height:1.6;">
-        新版本文件 <code>jd_hunter_new.html</code> 已下载完成！
+    <div style="background:#fff3cd;border-radius:10px;padding:15px;margin-bottom:20px;">
+      <div style="color:#856404;font-size:14px;">
+        💡 <strong>提示：</strong>本工具通过 CDP 协议连接 Edge 浏览器爬取 BOSS直聘职位信息，请确保已登录账号。
       </div>
     </div>
     
-    <div style="background:#fff8f0;border-radius:10px;padding:20px;margin-bottom:25px;">
-      <div style="font-size:16px;font-weight:bold;color:#333;margin-bottom:10px;">🔧 更新方法</div>
-      <ol style="color:#444;line-height:1.8;padding-left:20px;">
-        <li>找到下载的 <code>jd_hunter_new.html</code> 文件</li>
-        <li>用新文件替换当前页面文件</li>
-        <li>刷新页面即可使用新版本</li>
-        <li>您当前的数据已自动备份到localStorage</li>
-      </ol>
-    </div>
-    
-    <div style="display:flex;gap:15px;justify-content:center;">
-      <button onclick="document.getElementById('updateAnnouncement').remove();" style="padding:12px 25px;background:#e9ecef;border:none;border-radius:8px;font-size:16px;cursor:pointer;color:#666;">稍后更新</button>
-      <button onclick="location.reload();" style="padding:12px 25px;background:#4CAF50;border:none;border-radius:8px;font-size:16px;cursor:pointer;color:white;font-weight:bold;">🔄 立即刷新</button>
-    </div>
-    
-    <div style="margin-top:20px;text-align:center;font-size:13px;color:#888;">
-      数据已自动备份到 localStorage，更新不会丢失您的数据
+    <div style="text-align:center;">
+      <button onclick="document.getElementById('updateAnnouncement').remove()" style="background:linear-gradient(135deg,#667eea,#764ba2);color:white;border:none;padding:12px 40px;border-radius:25px;font-size:16px;cursor:pointer;box-shadow:0 4px 15px rgba(102,126,234,0.4);">
+        知道了
+      </button>
     </div>
   </div>
 </div>
-  `;
+`;
   
-  // 清除可能的重复弹窗
-  const existingAnnouncement = document.getElementById('updateAnnouncement');
-  if (existingAnnouncement) {
-    existingAnnouncement.remove();
-  }
-  
-  // 添加新弹窗
   document.body.insertAdjacentHTML('beforeend', announcementHTML);
-  
-  // 自动创建GitHub发布公告（可选）
-  setTimeout(async () => {
-    try {
-      const cfg = ghGetConfig();
-      if (cfg.user && cfg.repo && cfg.token) {
-        console.log('[更新公告] 尝试自动创建GitHub Release...');
-        await createReleaseAnnouncement(cfg.user, cfg.repo, cfg.token, newVersion, 
-          remoteChangelog ? remoteChangelog.notes.join('\n- ') : '性能优化和bug修复');
-      }
-    } catch (e) {
-      console.log('[更新公告] 自动创建失败:', e.message);
-    }
-  }, 1000);
 }
-
-// 更新日志弹窗
-function showChangelog() {
-  const changelog = `
-📅 更新日志
-━━━━━━━━━━━━━━━━━━━━
-
-🔖 v1.0.5 (2026-04-13)
-• 修复：自动更新公告功能
-• 新增：GitHub发布公告功能
-• 优化：版本检测逻辑
-
-🔖 v1.0.4 (2026-04-13)
-• 修复：本地版本号未同步问题
-• 新增：添加调试日志，方便排查问题
-
-🔖 v1.0.3 (2026-04-13)
-• 新增：「全部数据」按钮，可查看所有数据
-• 新增：表格显示每条数据的抓取状态
-• 新增：可直接导出全部数据为CSV/JSON
-
-🔖 v1.0.2 (2026-04-13)
-• 修复：数据保存问题
-• 新增：更新日志公告
-
-🔖 v1.0.1 (2026-04-13)
-• 新增：自动检测并下载GitHub新版本
-• 新增：页面顶部版本号可点击查看日志
-
-🔖 v1.0.0 (2026-04-13)
-• 初始版本
-• 支持BOSS直聘职位列表抓取
-• 支持详情页抓取
-• 支持CSV/Excel导出
-• 支持GitHub数据同步
-  `;
-  
-  const overlay = document.createElement('div');
-  overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,.7);z-index:99999;display:flex;align-items:center;justify-content:center';
-  overlay.onclick = (e) => { if (e.target === overlay) overlay.remove(); };
-  
-  const box = document.createElement('div');
-  box.style.cssText = 'background:var(--bg2);border:1px solid var(--bg4);border-radius:12px;padding:24px;max-width:400px;width:90%;max-height:70vh;overflow-y:auto';
-  box.innerHTML = `
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
-      <h2 style="color:var(--green)">📋 更新日志</h2>
-      <button onclick="this.closest('.changelog-overlay').remove()" style="background:none;border:none;color:var(--text3);font-size:1.5rem;cursor:pointer">×</button>
-    </div>
-    <pre style="color:var(--text2);font-size:.9rem;line-height:1.6;white-space:pre-wrap">${changelog}</pre>
-  `;
-  overlay.className = 'changelog-overlay';
-  overlay.appendChild(box);
-  document.body.appendChild(overlay);
-}
-
-function setDot(type,text){
-  const dot=document.getElementById('dot');
-  dot.className='status-dot '+(type==='idle'?'':(type==='crawl'?'crawl':type==='done'?'done':type==='error'?'error':'live'));
-  document.getElementById('status').textContent=text;
-}
-function toast(msg,type='ok'){
-  const t=document.getElementById('toast');
-  t.textContent=msg;t.className='toast '+type+' sh';
-  setTimeout(()=>t.classList.remove('sh'),3500);
-}
-
-// 页面加载完成后立即检查更新
-window.addEventListener('DOMContentLoaded', function() {
-  console.log('[页面加载] DOMContentLoaded 事件触发');
-  console.log('[页面加载] 开始自动检查更新...');
-  
-  // 延迟一小段时间以确保所有元素已加载
-  setTimeout(function() {
-    console.log('[页面加载] 调用 autoCheckUpdate()');
-    // 直接调用函数（因为 autoCheckUpdate 是立即执行函数）
-    // 实际上函数已经自动执行，但这里确保调用一次
-    try {
-      // 如果函数存在，尝试调用
-      if (typeof autoCheckUpdate === 'function') {
-        autoCheckUpdate();
-      } else {
-        console.log('[页面加载] autoCheckUpdate 不是函数，直接执行网络检查');
-        // 直接执行网络检查
-        (async function() {
-          try {
-            const versionUrl = 'https://raw.githubusercontent.com/KLdididi/jd_hunter/main/version.json';
-            const res = await fetch(versionUrl);
-            if (res.ok) {
-              const data = await res.json();
-              console.log('[页面加载] 获取版本成功:', data.version);
-              showUpdateAnnouncement(data.version, data);
-            }
-          } catch (e) {
-            console.log('[页面加载] 网络检查失败:', e.message);
-          }
-        })();
-      }
-    } catch (e) {
-      console.log('[页面加载] autoCheckUpdate 调用失败:', e.message);
-    }
-  }, 500);
-});
-
-// 每次刷新都显示版本更新弹窗
-setTimeout(function() {
-  console.log('[更新提醒] 显示版本更新公告...');
-  showUpdateAnnouncement(APP_VERSION, {
-    version: APP_VERSION,
-    changelog: CHANGELOG
-  });
-}, 500); // 1秒后显示弹窗，确保页面已加载
-</script>
-</body>
-</html>
