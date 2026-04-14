@@ -334,11 +334,19 @@ tbody tr.hi{background:rgba(245,158,11,.05)}
 
 <script>
 // ==================== 版本和更新日志 ====================
-const APP_VERSION = '1.1.1';  // 代码版本号
+const APP_VERSION = '1.1.2';  // 代码版本号
 
 // 更新日志
 const CHANGELOG = [
   {
+    version: '1.1.2',
+    date: '2026-04-14',
+    notes: [
+      '🔧 修复 HTML 结构错误（缺少闭合标签）',
+      '📋 修复页面加载时自动显示更新日志',
+      '🐛 修复多个潜在的 JavaScript 错误'
+    ]
+  },{
     version: '1.1.1',
     date: '2026-04-14',
     notes: [
@@ -1918,3 +1926,16 @@ function showUpdateAnnouncement(newVersion, remoteData) {
   
   document.body.insertAdjacentHTML('beforeend', announcementHTML);
 }
+
+// ==================== 页面加载时显示更新日志 ====================
+window.addEventListener('DOMContentLoaded', function() {
+  setTimeout(function() {
+    console.log('[更新提醒] 显示版本更新公告...');
+    showUpdateAnnouncement(APP_VERSION, {
+      version: APP_VERSION,
+      changelog: CHANGELOG
+    });
+  }, 800);
+});</script>
+</body>
+</html>
