@@ -2,7 +2,7 @@
 <html lang="zh-CN">
 <head>
 <meta charset="UTF-8">
-<title>JD Hunter v2.3 - BOSS直聘职位追踪器</title>
+<title>JD Hunter v2.5 - BOSS直聘职位追踪器</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 :root{--bg:#0a0e17;--bg2:#111827;--bg3:#1e293b;--green:#10b981;--cyan:#06b6d4;--amber:#f59e0b;--red:#ef4444;--purple:#8b5cf6;--text:#f1f5f9;--text2:#94a3b8;--text3:#64748b;--border:rgba(255,255,255,0.08)}
@@ -42,6 +42,13 @@ input,select{background:var(--bg3);border:1px solid var(--border);color:var(--te
 input[type=checkbox]{width:14px;height:14px;cursor:pointer;accent-color:var(--green)}
 .lbl{display:flex;align-items:center;gap:.3rem;font-size:.73rem;color:var(--text2);cursor:pointer;user-select:none}
 tr.detail-row{display:table-row}
+/* 筛选栏 */
+.filter-bar{display:flex;flex-wrap:wrap;gap:.4rem;align-items:center;margin-bottom:.7rem;background:var(--bg2);border:1px solid var(--border);border-radius:8px;padding:.5rem .7rem}
+.filter-bar .panel-label{margin:0;font-size:.6rem;color:var(--text3)}
+.filter-bar select,.filter-bar input{background:var(--bg3);border:1px solid var(--border);color:var(--text);padding:.25rem .5rem;border-radius:4px;font-size:.73rem}
+.filter-bar select:focus,.filter-bar input:focus{outline:none;border-color:var(--cyan)}
+.filter-count{font-size:.7rem;color:var(--text3);margin-left:auto;white-space:nowrap}
+.filter-count span{color:var(--green);font-weight:600}
 tr.detail-row td{padding:.4rem .5rem .5rem 2.5rem;background:rgba(6,182,212,.03);border-top:none}
 .desc-label{font-size:.58rem;color:var(--cyan);text-transform:uppercase;letter-spacing:.4px;margin-bottom:.2rem}
 .desc-text{font-size:.7rem;color:var(--text2);line-height:1.6;white-space:pre-wrap;word-break:break-all;max-height:80px;overflow-y:auto;background:var(--bg3);border:1px solid var(--border);border-radius:5px;padding:.4rem .6rem}
@@ -113,13 +120,15 @@ tr.row-hot td{background:rgba(239,68,68,.05)}
 .toast.sh{transform:translateX(-50%) translateY(0)}
 .toast.ok{border-color:var(--green);color:var(--green)}
 .toast.er{border-color:var(--red);color:var(--red)}
+.page-bar{display:flex;align-items:center;justify-content:space-between;padding:.45rem .7rem;background:var(--bg2);border:1px solid var(--border);border-top:none;border-radius:0 0 8px 8px;flex-wrap:wrap;gap:.4rem}
+.p-btn{padding:.18rem .45rem;font-size:.68rem;min-width:0}
 </style>
 </head>
 <body>
 <div class="topbar">
   <div style="display:flex;align-items:center">
     <h1>🕷️ JD Hunter</h1>
-    <span class="ver">v2.3</span>
+    <span class="ver">v2.5</span>
   </div>
   <div class="topbar-r">
     <div class="dot" id="dot"></div>
@@ -200,8 +209,21 @@ tr.row-hot td{background:rgba(239,68,68,.05)}
   <!-- 日志 -->
   <div class="log-box" id="logBox"></div>
 
+  <!-- 筛选栏 -->
+  <div class="filter-bar">
+    <div class="panel-label">筛选</div>
+    <select id="fCity">
+      <option value="">全部城市</option>
+    </select>
+    <select id="fKw">
+      <option value="">全部关键词</option>
+    </select>
+    <button class="btn bo" id="fClear" style="padding:.2rem .5rem">清除</button>
+    <div class="filter-count">显示 <span id="fCount">0</span> / <span id="fTotal">0</span> 条</div>
+  </div>
+
   <!-- 表格 -->
-  <div class="tbl-wrap">
+  <div class="tbl-wrap" style="max-height:520px;overflow-y:auto;position:relative">
     <table>
       <thead>
         <tr>
@@ -217,6 +239,24 @@ tr.row-hot td{background:rgba(239,68,68,.05)}
       </thead>
       <tbody id="tbody"></tbody>
     </table>
+  </div>
+
+  <!-- 翻页栏 -->
+  <div class="page-bar" id="pageBar">
+    <span id="pageInfo" style="font-size:.72rem;color:var(--text2)"></span>
+    <div style="display:flex;align-items:center;gap:.3rem">
+      <select id="pSize" style="width:60px;padding:.18rem .3rem;font-size:.68rem">
+        <option value="20">20条/页</option>
+        <option value="30" selected>30条/页</option>
+        <option value="50">50条/页</option>
+        <option value="100">100条/页</option>
+      </select>
+      <button class="btn bo p-btn" id="pFirst">«首页</button>
+      <button class="btn bo p-btn" id="pPrev">‹上一页</button>
+      <span id="pNums" style="font-size:.7rem;color:var(--text2);white-space:nowrap"></span>
+      <button class="btn bo p-btn" id="pNext">下一页›</button>
+      <button class="btn bo p-btn" id="pLast">尾页»</button>
+    </div>
   </div>
 </div>
 
@@ -245,8 +285,8 @@ tr.row-hot td{background:rgba(239,68,68,.05)}
 <script>
 // === 常量 ===
 const SERVER = 'http://127.0.0.1:5188';
-const KEY_JOBS = 'jdh_jobs_v23';
-const KEY_CP = 'jdh_cp_v23';
+const KEY_JOBS = 'jdh_jobs_v25';
+const KEY_CP = 'jdh_cp_v25';
 
 const CITY_CODE = {
   '北京':'101010100','上海':'101020100','深圳':'101280600','广州':'101280100',
@@ -270,6 +310,10 @@ let JOBS = [];
 let running = false;
 let shouldStop = false;
 let skipCount = 0;
+let FILTER_CITY = '';
+let FILTER_KW = '';
+let PAGE_SIZE = 30;
+let CUR_PAGE = 1;
 
 // === DOM ===
 function $(id) { return document.getElementById(id); }
@@ -662,29 +706,56 @@ async function startCrawl() {
   $('progWrap').classList.remove('on');
   $('progDetail').textContent = '-';
   setStatus('live', '完成');
+  updateFilterOptions();
+  render();
 }
 
 function stopCrawl() { shouldStop = true; toast('停止中...', 'er'); }
 
 // === 表格渲染 ===
-function render() {
+function getVisible() {
+  return JOBS.filter(function(j) {
+    if (FILTER_CITY && j.city !== FILTER_CITY) return false;
+    if (FILTER_KW && j.keyword !== FILTER_KW) return false;
+    return true;
+  });
+}
+
+function getTotalPages(visible) {
+  return Math.max(1, Math.ceil(visible.length / PAGE_SIZE));
+}
+
+function goPage(p, visible) {
+  var total = getTotalPages(visible);
+  if (p < 1) p = 1;
+  if (p > total) p = total;
+  CUR_PAGE = p;
+  renderTable(visible);
+  updatePageBar(visible);
+}
+
+function renderTable(visible) {
   var tb = $('tbody');
-  if (!JOBS.length) {
-    tb.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:1.5rem;color:var(--text3)">暂无数据，点击「开始爬取」</td></tr>';
+  if (!visible.length) {
+    tb.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:1.5rem;color:var(--text3)">暂无数据，点击「开始爬取」或调整筛选条件</td></tr>';
     return;
   }
+  var total = getTotalPages(visible);
+  var start = (CUR_PAGE - 1) * PAGE_SIZE;
+  var end = Math.min(start + PAGE_SIZE, visible.length);
+  var pageItems = visible.slice(start, end);
+  var pageStart = start + 1;
   var html = [];
-  var start = Math.max(0, JOBS.length - 200);
-  for (var i = JOBS.length - 1; i >= start; i--) {
-    var j = JOBS[i];
+  for (var vi = 0; vi < pageItems.length; vi++) {
+    var j = pageItems[vi];
+    var realIdx = JOBS.indexOf(j);
     var isHot = TOP_COS.some(function(c) { return (j.company||'').indexOf(c) >= 0; });
     var rowClass = isHot ? 'row-hot' : '';
-    var num = i + 1;
+    var num = start + vi + 1;
     var linkHtml = j.link
       ? '<a href="' + esc(j.link) + '" target="_blank" title="打开BOSS直聘">🔗</a>'
       : '<span style="color:var(--text3)">-</span>';
-    // 主行
-    html.push('<tr class="main-row ' + rowClass + '" data-idx="' + i + '">'
+    html.push('<tr class="main-row ' + rowClass + '" data-idx="' + realIdx + '">'
       + '<td style="color:var(--text3)">' + num + '</td>'
       + '<td style="font-size:.72rem">' + esc(j.city) + '</td>'
       + '<td><span class="tag tp" style="font-size:.58rem">' + esc(j.keyword) + '</span></td>'
@@ -694,7 +765,6 @@ function render() {
       + '<td><span class="tag te" style="font-size:.58rem">' + esc(j.exp||'-') + '</span></td>'
       + '<td class="td-link" style="text-align:center;white-space:nowrap">' + linkHtml + '</td>'
       + '</tr>');
-    // 展开详情行
     var dRow = '';
     if (j.desc) {
       dRow += '<div class="desc-label">职位描述</div><div class="desc-text">' + esc(j.desc) + '</div>';
@@ -706,9 +776,51 @@ function render() {
     } else {
       dRow += '<div class="ci-label">公司介绍</div><div class="ci-empty">无（未爬取）</div>';
     }
-    html.push('<tr class="detail-row shown" id="dr' + i + '"><td colspan="8" style="padding:.4rem .5rem .6rem 2.5rem;background:rgba(6,182,212,.03);border-top:none">' + dRow + '</td></tr>');
+    html.push('<tr class="detail-row" id="dr' + realIdx + '"><td colspan="8" style="padding:.4rem .5rem .6rem 2.5rem;background:rgba(6,182,212,.03);border-top:none">' + dRow + '</td></tr>');
   }
   tb.innerHTML = html.join('');
+}
+
+function updatePageBar(visible) {
+  $('fCount').textContent = visible.length;
+  $('fTotal').textContent = JOBS.length;
+  var total = getTotalPages(visible);
+  var start = (CUR_PAGE - 1) * PAGE_SIZE + 1;
+  var end = Math.min(CUR_PAGE * PAGE_SIZE, visible.length);
+  $('pageInfo').textContent = '第 ' + CUR_PAGE + ' / ' + total + ' 页，共 ' + visible.length + ' 条（' + start + '-' + end + '）';
+
+  // 页码按钮：最多显示7个
+  var nums = [];
+  if (total <= 7) {
+    for (var i = 1; i <= total; i++) nums.push(i);
+  } else {
+    if (CUR_PAGE <= 4) {
+      nums = [1,2,3,4,5,'…',total];
+    } else if (CUR_PAGE >= total - 3) {
+      nums = [1,'…',total-4,total-3,total-2,total-1,total];
+    } else {
+      nums = [1,'…',CUR_PAGE-1,CUR_PAGE,CUR_PAGE+1,'…',total];
+    }
+  }
+  var html = nums.map(function(n) {
+    if (n === '…') return '<span style="color:var(--text3);padding:0 .1rem">…</span>';
+    var cls = (n === CUR_PAGE) ? 'bc' : 'bo';
+    return '<button class="btn ' + cls + ' p-btn" data-p="' + n + '" style="min-width:28px;padding:.18rem .35rem;font-size:.68rem">' + n + '</button>';
+  });
+  $('pNums').innerHTML = html.join('');
+
+  $('pFirst').disabled = CUR_PAGE <= 1;
+  $('pPrev').disabled = CUR_PAGE <= 1;
+  $('pNext').disabled = CUR_PAGE >= total;
+  $('pLast').disabled = CUR_PAGE >= total;
+}
+
+function render() {
+  var visible = getVisible();
+  var total = getTotalPages(visible);
+  if (CUR_PAGE > total) CUR_PAGE = Math.max(1, total);
+  renderTable(visible);
+  updatePageBar(visible);
 }
 
 function updateStats() {
@@ -806,6 +918,7 @@ function impJSON() {
         for (var i = 0; i < data.length; i++) JOBS.push(data[i]);
         if (doDedup) { JOBS = deduplicate(JOBS); }
         saveJobs();
+        updateFilterOptions();
         render();
         updateStats();
         var added = JOBS.length - before;
@@ -860,7 +973,10 @@ function clearAll() {
   if (!confirm('确定清空 ' + JOBS.length + ' 条数据？')) return;
   JOBS = [];
   skipCount = 0;
+  FILTER_CITY = '';
+  FILTER_KW = '';
   saveJobs();
+  updateFilterOptions();
   render();
   updateStats();
   toast('已清空', 'ok');
@@ -902,6 +1018,53 @@ $('tbody').addEventListener('click', function(e) {
   }
 });
 
+// === 筛选 ===
+function updateFilterOptions() {
+  var cities = [''];
+  var kws = [''];
+  var seenC = {}, seenK = {};
+  for (var i = 0; i < JOBS.length; i++) {
+    if (JOBS[i].city && !seenC[JOBS[i].city]) { seenC[JOBS[i].city] = true; cities.push(JOBS[i].city); }
+    if (JOBS[i].keyword && !seenK[JOBS[i].keyword]) { seenK[JOBS[i].keyword] = true; kws.push(JOBS[i].keyword); }
+  }
+  $('fCity').innerHTML = cities.map(function(c) { return '<option value="' + esc(c) + '">' + (c || '全部城市') + '</option>'; }).join('');
+  $('fKw').innerHTML = kws.map(function(k) { return '<option value="' + esc(k) + '">' + (k || '全部关键词') + '</option>'; }).join('');
+  $('fCity').value = FILTER_CITY;
+  $('fKw').value = FILTER_KW;
+}
+
+$('fCity').addEventListener('change', function() {
+  FILTER_CITY = this.value;
+  render();
+});
+$('fKw').addEventListener('change', function() {
+  FILTER_KW = this.value;
+  render();
+});
+$('fClear').addEventListener('click', function() {
+  FILTER_CITY = '';
+  FILTER_KW = '';
+  $('fCity').value = '';
+  $('fKw').value = '';
+  CUR_PAGE = 1;
+  render();
+});
+
+// === 翻页事件 ===
+$('pSize').addEventListener('change', function() {
+  PAGE_SIZE = parseInt(this.value) || 30;
+  CUR_PAGE = 1;
+  render();
+});
+$('pFirst').addEventListener('click', function() { goPage(1, getVisible()); });
+$('pPrev').addEventListener('click', function() { goPage(CUR_PAGE - 1, getVisible()); });
+$('pNext').addEventListener('click', function() { goPage(CUR_PAGE + 1, getVisible()); });
+$('pLast').addEventListener('click', function() { goPage(getTotalPages(getVisible()), getVisible()); });
+$('pNums').addEventListener('click', function(e) {
+  var btn = e.target.closest('[data-p]');
+  if (btn) goPage(parseInt(btn.dataset.p), getVisible());
+});
+
 // === 初始化 ===
 (function init() {
   renderCityGrid();
@@ -910,6 +1073,7 @@ $('tbody').addEventListener('click', function(e) {
     var s = localStorage.getItem(KEY_JOBS);
     if (s) JOBS = JSON.parse(s);
   } catch(e) {}
+  updateFilterOptions();
   render();
   updateStats();
   var cp = getCheckpoint();
